@@ -5,7 +5,7 @@ import { Package, TrendingUp, TrendingDown, AlertTriangle, BarChart3 } from 'luc
 
 export default function StockOverviewWidget() {
   const { products } = useData();
-  const { calculateCurrentStock, stockMovements } = useStock();
+  const { calculateCurrentStock, stockMovements, getProductStockSummary } = useStock(); // ✅ Correction ici
 
   // Calculer les statistiques globales
   const totalProducts = products.length;
