@@ -265,29 +265,7 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
           )}
         </div>
 
-        {/* Mini graphique d'évolution */}
-        {chartData.length > 1 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4 text-purple-600" />
-              <span>Évolution du stock (30 derniers jours)</span>
-            </h4>
-            <div className="h-20 flex items-end space-x-1">
-              {chartData.map((point, index) => (
-                <div key={index} className="flex-1 flex flex-col items-center">
-                  <div
-                    className="w-full bg-gradient-to-t from-blue-400 to-blue-500 rounded-t transition-all duration-500 hover:from-blue-500 hover:to-blue-600"
-                    style={{ height: `${(point.stock / maxStock) * 100}%`, minHeight: '2px' }}
-                    title={`${point.date}: ${point.stock.toFixed(1)} ${product.unit}`}
-                  />
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 transform -rotate-45 origin-left">
-                    {point.date}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+       
 
         {/* Filtres */}
         <div className="flex items-center justify-between">
