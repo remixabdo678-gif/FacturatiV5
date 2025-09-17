@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StockAlertsWidget() {
   const { products } = useData();
-  const { calculateCurrentStock } = useStock();
+const { calculateCurrentStock, getProductStockSummary } = useStock();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
 
@@ -14,11 +14,7 @@ export default function StockAlertsWidget() {
     // Générer les alertes de stock
     const newAlerts = products
       .map(product => {
-        // Calculer le stock restant : stock initial - quantité vendue + rectifications
-        const summary = getProductStockSummary(product.id);
-        const totalAdjustments = summary ? summary.totalAdjustments : 0;
-        const totalSales = summary ? summary.totalSales : 0;
-        const currentStock = (product.initialStock || 0) - totalSales + totalAdjustments;
+        const currentStock = calculateCurrentStock(product.id);
         
         if (currentStock <= 0) {
           return {
@@ -27,18 +23,18 @@ export default function StockAlertsWidget() {
             productName: product.name,
             type: 'out_of_stock',
             currentStock,
-            minStock: product.minStock || 0,
+            minStock: product.minStock,
             unit: product.unit,
             severity: 'critical'
           };
-        } else if (currentStock <= (product.minStock || 0)) {
+        } else if (currentStock <= product.minStock) {
           return {
             id: `low-${product.id}`,
             productId: product.id,
             productName: product.name,
             type: 'low_stock',
             currentStock,
-            minStock: product.minStock || 0,
+            minStock: product.minStock,
             unit: product.unit,
             severity: 'warning'
           };
