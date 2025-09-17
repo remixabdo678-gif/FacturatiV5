@@ -277,4 +277,18 @@ export default function ProductsList() {
             isOpen={!!adjustingStock}
             onClose={() => setAdjustingStock(null)}
             product={products.find(p => p.id === adjustingStock)!}
-            currentStock={calculateCurrentStock(adjustingSto
+            currentStock={calculateCurrentStock(adjustingStock)}
+          />
+        )}
+
+        {viewingHistory && (
+          <StockHistoryModal
+            isOpen={!!viewingHistory}
+            onClose={() => setViewingHistory(null)}
+            product={products.find(p => p.id === viewingHistory)!}
+          />
+        )}
+      </div>
+    </>
+  );
+}
