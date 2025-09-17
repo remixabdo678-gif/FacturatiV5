@@ -40,6 +40,9 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
     { value: 'Kg', label: 'Kg' },
     { value: 'Litre', label: 'Litre' },
     { value: 'Tonne', label: 'Tonne' },
+     { value: 'Boite', label: 'Boite' },
+     { value: 'Paque', label: 'Paque' },
+    { value: 'unit', label: 'unit' },
     { value: 'Autre', label: 'Autre' }
   ];
   const handleSubmit = (e: React.FormEvent) => {
