@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLicense } from '../../contexts/LicenseContext';
-import { Crown, Check } from 'lucide-react';
+import { Crown, Check, X } from 'lucide-react';
 
 interface TemplateSelectorProps {
   selectedTemplate: string;
@@ -12,45 +12,55 @@ interface TemplateSelectorProps {
 const templates = [
   {
     id: 'template1',
-    name: 'Classique',
-    description: 'Mise en page simple et sobre',
+    name: 'Classic Free',
+    description: 'Mise en page simple et sobre (gratuit)',
     isPro: false,
-    preview: '/api/placeholder/200/150'
+    preview: 'https://i.ibb.co/YBV0zw2v/T1.png'
   },
   {
     id: 'template2',
-    name: 'Moderne Coloré',
-    description: 'Design moderne avec dégradés',
+    name: 'Noir Classique Pro',
+    description: 'Design classique avec fond noir',
     isPro: true,
-    preview: '/api/placeholder/200/150'
+    preview: 'https://i.ibb.co/d4xfv93F/T2.png'
   },
   {
     id: 'template3',
-    name: 'Minimaliste',
-    description: 'Design épuré noir & blanc',
+    name: 'Moderne avec formes vertes Pro',
+    description: 'Design moderne avec éléments verts',
     isPro: true,
-    preview: '/api/placeholder/200/150'
+    preview: 'https://i.ibb.co/wh4V38jY/T3.png'
   },
   {
     id: 'template4',
-    name: 'Corporate',
-    description: 'Professionnel et structuré',
+    name: 'Bleu Élégant Pro',
+    description: 'Design élégant avec thème bleu',
     isPro: true,
-    preview: '/api/placeholder/200/150'
+    preview: 'https://i.ibb.co/cPChhS4/T4.png'
   },
   {
     id: 'template5',
-    name: 'Premium Élégant',
-    description: 'Design luxueux doré/noir',
+    name: 'Minimal Bleu Pro',
+    description: 'Design minimaliste avec accents bleus',
     isPro: true,
-    preview: '/api/placeholder/200/150'
+    preview: 'https://i.ibb.co/p64GL1nQ/T5.png'
   }
 ];
 
-export default function TemplateSelector({ selectedTemplate, onTemplateSelect, allowProSelection = true, disabled = false }: TemplateSelectorProps) {
+interface TemplateSelectorProps {
+  selectedTemplate: string;
+  onTemplateSelect: (templateId: string) => void;
+  allowProSelection?: boolean;
+  disabled?: boolean;
+  showPreviewButton?: boolean;
+}
+
+export default function TemplateSelector({ selectedTemplate, onTemplateSelect, allowProSelection = true, disabled = false, showPreviewButton = false }: TemplateSelectorProps) {
   const { licenseType } = useLicense();
+  const [previewTemplate, setPreviewTemplate] = useState<string | null>(null);
 
   return (
+    <>
     <div className="mb-6">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Choisir un modèle</h3>
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -70,8 +80,19 @@ export default function TemplateSelector({ selectedTemplate, onTemplateSelect, a
               onClick={() => !disabled && onTemplateSelect(template.id)}
             >
               {/* Preview placeholder */}
-              <div className="w-full h-24 bg-gray-100 dark:bg-gray-700 rounded mb-3 flex items-center justify-center">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Aperçu</span>
+              <div className="w-full h-24 bg-gray-100 dark:bg-gray-700 rounded mb-3 flex items-center justify-center relative overflow-hidden">
+                <img 
+                  src={template.preview} 
+                  alt={`Aperçu ${template.name}`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling!.style.display = 'flex';
+                  }}
+                />
+                <div className="hidden w-full h-full items-center justify-center">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Aperçu</span>
+                </div>
               </div>
               
               {/* Template info */}
@@ -95,6 +116,20 @@ export default function TemplateSelector({ selectedTemplate, onTemplateSelect, a
                 )}
               </div>
               
+              {/* Preview button */}
+              {showPreviewButton && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewTemplate(template.id);
+                  }}
+                  className="w-full mt-2 px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                >
+                  Aperçu
+                </button>
+              )}
+              
               {/* Selection indicator */}
               {isSelected && (
                 <div className="absolute -top-2 -right-2 w-6 h-6 bg-teal-500 rounded-full flex items-center justify-center">
@@ -115,5 +150,32 @@ export default function TemplateSelector({ selectedTemplate, onTemplateSelect, a
         </div>
       )}
     </div>
+    
+    {/* Preview Modal */}
+    {previewTemplate && (
+      <div className="fixed inset-0 z-[70] bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Aperçu - {templates.find(t => t.id === previewTemplate)?.name}
+            </h3>
+            <button
+              onClick={() => setPreviewTemplate(null)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <X className="w-5 h-5 text-gray-500" />
+            </button>
+          </div>
+          <div className="p-4">
+            <img 
+              src={templates.find(t => t.id === previewTemplate)?.preview}
+              alt={`Aperçu ${templates.find(t => t.id === previewTemplate)?.name}`}
+              className="w-full h-auto max-h-[70vh] object-contain rounded"
+            />
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
