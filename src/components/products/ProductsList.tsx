@@ -188,19 +188,7 @@ export default function ProductsList() {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
-              <RotateCcw className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stockMovements?.filter(m => m.type === 'adjustment').length || 0}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Rectifications</p>
-            </div>
-          </div>
-        </div>
+      
         
       
       </div>
