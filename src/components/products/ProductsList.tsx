@@ -42,6 +42,17 @@ export default function ProductsList() {
     return initialStock + adjustments - sales;
   };
 
+// Fonction utilitaire
+const formatQuantity = (value: number, unit?: string) => {
+  if (!unit) return value.toString();
+
+  const lowerUnit = unit.toLowerCase();
+  if (lowerUnit === 'kg' || lowerUnit === 'tonne' || lowerUnit === 'tonnes') {
+    return value.toFixed(3).replace('.', ','); // 3 décimales avec virgule
+  }
+  return Math.round(value).toString(); // pas de virgule pour les autres
+};
+  
   // Obtenir le résumé du stock d'un produit
   const getProductStockSummary = (productId: string) => {
     const product = products.find(p => p.id === productId);
