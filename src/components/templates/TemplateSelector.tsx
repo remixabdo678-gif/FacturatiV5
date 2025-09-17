@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import { useLicense } from '../../contexts/LicenseContext';
 import { Crown, Check, X } from 'lucide-react';
 
