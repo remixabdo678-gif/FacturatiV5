@@ -207,12 +207,7 @@ export default function ProductsList() {
             <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-white" />
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {invoices.length}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Ventes</p>
-            </div>
+           
           </div>
         </div>
       </div>
