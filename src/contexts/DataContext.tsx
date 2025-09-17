@@ -257,7 +257,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuth();
-  const stockContext = React.useContext(require('./StockContext').StockContext);
+const stockContext = useStock();
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
