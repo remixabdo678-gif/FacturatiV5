@@ -6,14 +6,15 @@ import AddProductModal from './AddProductModal';
 import EditProductModal from './EditProductModal';
 import StockAdjustmentModal from './StockAdjustmentModal';
 import StockHistoryModal from './StockHistoryModal';
-import { Plus, Search, Edit, Trash2, AlertTriangle, Package, RotateCcw, History, TrendingUp, TrendingDown,stockMovements  } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, AlertTriangle, Package, RotateCcw, History, TrendingUp, TrendingDown } from 'lucide-react';
 import StockOverviewWidget from './StockOverviewWidget';
 import StockAlertsWidget from './StockAlertsWidget';
+
 
 export default function ProductsList() {
   const { t } = useLanguage();
   const { products, deleteProduct, invoices } = useData();
-  const { getProductStockSummary, calculateCurrentStock } = useStock();
+  const { stockMovements, getProductStockSummary, calculateCurrentStock } = useStock(); // ✅ correction ici
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
