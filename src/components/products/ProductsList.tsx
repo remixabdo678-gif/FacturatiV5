@@ -189,6 +189,7 @@ export default function ProductsList() {
                 </tr>
               </thead>
               <tbody>
+                
                 {filteredProducts.map((product) => {
                   const stats = getProductStats(product.id);
                   const lastAdjustment = getLastStockAdjustment(product.id);
@@ -277,18 +278,4 @@ export default function ProductsList() {
             isOpen={!!adjustingStock}
             onClose={() => setAdjustingStock(null)}
             product={products.find(p => p.id === adjustingStock)!}
-            currentStock={calculateCurrentStock(adjustingStock)}
-          />
-        )}
-
-        {viewingHistory && (
-          <StockHistoryModal
-            isOpen={!!viewingHistory}
-            onClose={() => setViewingHistory(null)}
-            product={products.find(p => p.id === viewingHistory)!}
-          />
-        )}
-      </div>
-    </>
-  );
-}
+            currentStock={calculateCurrentStock(adjustingSto
