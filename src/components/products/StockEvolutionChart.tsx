@@ -1,5 +1,5 @@
 import React from 'react';
-import { useData } from '../../contexts/DataContext';
+import { useStock } from '../../contexts/StockContext';
 import { Product } from '../../contexts/DataContext';
 import { BarChart3, TrendingUp, TrendingDown, Package, Calendar } from 'lucide-react';
 
@@ -8,74 +8,9 @@ interface StockEvolutionChartProps {
 }
 
 export default function StockEvolutionChart({ product }: StockEvolutionChartProps) {
-  const { stockMovements, invoices } = useData();
+  const { getProductStockHistory } = useStock();
   
-  // Générer l'historique complet du produit
-  const generateProductHistory = () => {
-    const history = [];
-    
-    // 1. Stock initial
-    if (product.initialStock > 0) {
-      history.push({
-        id: `initial-${product.id}`,
-        type: 'initial',
-        date: product.createdAt,
-        quantity: product.initialStock,
-        previousStock: 0,
-        newStock: product.initialStock,
-        reason: 'Stock initial',
-        userName: 'Système'
-      });
-      
-    }
-    
-    
-    // 2. Ventes (depuis les factures)
-    invoices.forEach(invoice => {
-      invoice.items.forEach(item => {
-        if (item.description === product.name) {
-          const previousMovements = history.filter(h => new Date(h.date) <= new Date(invoice.date));
-          const previousStock = previousMovements.length > 0 
-            ? previousMovements[previousMovements.length - 1].newStock 
-            : product.initialStock;
-          
-          history.push({
-            id: `sale-${invoice.id}-${item.id}`,
-            type: 'sale',
-            date: invoice.date,
-            quantity: -item.quantity,
-            previousStock,
-            newStock: previousStock - item.quantity,
-            reason: 'Vente',
-            userName: 'Système'
-          });
-        }
-      });
-    });
-    
-    // 3. Rectifications (depuis les mouvements de stock)
-    const adjustments = stockMovements.filter(m => 
-      m.productId === product.id && m.type === 'adjustment'
-    );
-    
-    adjustments.forEach(adjustment => {
-      history.push({
-        id: adjustment.id,
-        type: 'adjustment',
-        date: adjustment.date,
-        quantity: adjustment.quantity,
-        previousStock: adjustment.previousStock,
-        newStock: adjustment.newStock,
-        reason: adjustment.reason || 'Rectification',
-        userName: adjustment.userName
-      });
-    });
-    
-    // Trier par date
-    return history.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  };
-  
-  const history = generateProductHistory();
+  const history = getProductStockHistory(product.id);
   
   // Générer les données pour les 30 derniers jours
   const generateChartData = () => {
@@ -92,9 +27,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
         return movementDate <= date;
       });
       
-      const stock = dayMovements.length > 0 ? 
-        dayMovements[dayMovements.length - 1].newStock : 
-        product.initialStock || 0;
+      const stock = dayMovements.length > 0 ? dayMovements[0].newStock : product.initialStock || 0;
       
       days.push({
         date: date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
@@ -123,8 +56,8 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
               Évolution du Stock - {product.name}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-300">30 derniers jours</p>
-          {chartData.length > 1 ? (
-            chartData[chartData.length - 1].stock > chartData[chartData.length - 2].stock ? (
+          </div>
+        </div>
         
         <div className="flex items-center space-x-2">
           {trend > 0 ? (
@@ -135,32 +68,28 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
             <Package className="w-5 h-5 text-gray-500" />
           )}
           <span className={`text-sm font-medium ${
-            chartData.length > 1 && chartData[chartData.length - 1].stock > chartData[chartData.length - 2].stock ? 'text-green-600' : 'text-red-600'
+            trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-600'
           }`}>
-      {chartData.length > 0 && (
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-600">
-            <div className="text-lg font-bold text-blue-600">{(product.initialStock || 0).toFixed(3)}</div>
-            <div className="text-xs text-blue-700 dark:text-blue-300">Stock initial</div>
-          </div>
-          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-red-200 dark:border-red-600">
-            <div className="text-lg font-bold text-red-600">
-              {invoices.reduce((sum, invoice) => {
-                return sum + invoice.items
-                  .filter(item => item.description === product.name)
-                  .reduce((itemSum, item) => itemSum + item.quantity, 0);
-              }, 0).toFixed(3)}
-            </div>
-            <div className="text-xs text-red-700 dark:text-red-300">Total vendu</div>
-          </div>
-          <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-600">
-            <div className="text-lg font-bold text-green-600">
-              {chartData.length > 0 ? chartData[chartData.length - 1].stock.toFixed(3) : '0'}
-            </div>
-            <div className="text-xs text-green-700 dark:text-green-300">Stock actuel</div>
-          </div>
+            {trend > 0 ? '+' : ''}{trend.toFixed(1)} {product.unit}
+          </span>
         </div>
-      )}
+      </div>
+
+      {/* Statistiques rapides */}
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+          <div className="text-lg font-bold text-blue-600">{currentStock.toFixed(1)}</div>
+          <div className="text-xs text-blue-700 dark:text-blue-300">Stock actuel</div>
+        </div>
+        <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700">
+          <div className="text-lg font-bold text-green-600">{maxStock.toFixed(1)}</div>
+          <div className="text-xs text-green-700 dark:text-green-300">Maximum</div>
+        </div>
+        <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700">
+          <div className="text-lg font-bold text-red-600">{minStock.toFixed(1)}</div>
+          <div className="text-xs text-red-700 dark:text-red-300">Minimum</div>
+        </div>
+      </div>
 
       {/* Graphique */}
       <div className="h-32 flex items-end space-x-1 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
