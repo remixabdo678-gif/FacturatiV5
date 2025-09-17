@@ -225,7 +225,7 @@ function RegisterForm({ onBack }: { onBack: () => void }) {
     }
 
     if (!formData.companyName || !formData.ice || !formData.email || !formData.patente || !formData.website) {
-      setError('Le nom de la société, l\'ICE, l\'email, la patente et le site web sont obligatoires');
+      setError('Le nom de la société, l\'ICE, l\'email et la patente sont obligatoires');
       setIsLoading(false);
       return;
     }
@@ -511,14 +511,13 @@ function RegisterForm({ onBack }: { onBack: () => void }) {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Site web *
+                  Site web
                 </label>
                 <input
                   type="url"
                   name="website"
                   value={formData.website}
                   onChange={handleChange}
-                  required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="https://www.entreprise.com"
                 />

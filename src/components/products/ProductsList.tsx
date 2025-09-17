@@ -5,7 +5,7 @@ import AddProductModal from './AddProductModal';
 import EditProductModal from './EditProductModal';
 import StockAdjustmentModal from './StockAdjustmentModal';
 import StockHistoryModal from './StockHistoryModal';
-import { Plus, Search, Edit, Trash2, AlertTriangle, Package, RotateCcw, History, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, AlertTriangle, Package, RotateCcw, History, TrendingUp, TrendingDown, Info, HelpCircle } from 'lucide-react';
 import StockOverviewWidget from './StockOverviewWidget';
 import StockAlertsWidget from './StockAlertsWidget';
 
@@ -18,6 +18,7 @@ export default function ProductsList() {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [adjustingStock, setAdjustingStock] = useState<string | null>(null);
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
+  const [showActionsHelp, setShowActionsHelp] = useState(false);
 
   // Calculer le stock restant selon la formule : Stock Initial + Rectifications - Ventes
   const calculateCurrentStock = (productId: string) => {
@@ -236,7 +237,57 @@ const formatQuantity = (value: number, unit?: string) => {
                   Statut
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Actions
+                  <div className="flex items-center space-x-2">
+                    <span>Actions</span>
+                    <div className="relative">
+                      <button
+                        onMouseEnter={() => setShowActionsHelp(true)}
+                        onMouseLeave={() => setShowActionsHelp(false)}
+                        className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
+                      >
+                        <HelpCircle className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+                      </button>
+                      
+                      {showActionsHelp && (
+                        <div className="absolute top-6 left-0 z-50 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl p-4 animate-fade-in">
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center space-x-2">
+                            <Info className="w-4 h-4 text-blue-600" />
+                            <span>Guide des Actions</span>
+                          </h4>
+                          <div className="space-y-3 text-sm">
+                            <div className="flex items-center space-x-3">
+                              <History className="w-4 h-4 text-purple-600" />
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-gray-100">Aperçu Stock</p>
+                                <p className="text-gray-600 dark:text-gray-300">Voir l'historique complet et les graphiques</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <RotateCcw className="w-4 h-4 text-blue-600" />
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-gray-100">Rectifier Stock</p>
+                                <p className="text-gray-600 dark:text-gray-300">Ajuster le stock (entrée/sortie)</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <Edit className="w-4 h-4 text-amber-600" />
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-gray-100">Modifier</p>
+                                <p className="text-gray-600 dark:text-gray-300">Éditer les informations du produit</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-3">
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <div>
+                                <p className="font-medium text-gray-900 dark:text-gray-100">Supprimer</p>
+                                <p className="text-gray-600 dark:text-gray-300">Supprimer définitivement le produit</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </th>
               </tr>
             </thead>

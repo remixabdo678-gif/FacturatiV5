@@ -1,14 +1,25 @@
 import React from 'react';
-import { useStock } from '../../contexts/StockContext';
+import { useData } from '../../contexts/DataContext';
 import { Product } from '../../contexts/DataContext';
-import { BarChart3, TrendingUp, TrendingDown, Package, Calendar } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Package, Calendar, Clock } from 'lucide-react';
 
 interface StockEvolutionChartProps {
   product: Product;
 }
 
 export default function StockEvolutionChart({ product }: StockEvolutionChartProps) {
-  const { getProductStockHistory } = useStock();
+  const { stockMovements, invoices } = useData();
+  
+  // Obtenir l'historique du produit
+  const getProductStockHistory = (productId: string) => {
+    return stockMovements
+      .filter(movement => movement.productId === productId)
+      .sort((a, b) => {
+        const dateA = new Date(a.adjustmentDateTime || a.date);
+        const dateB = new Date(b.adjustmentDateTime || b.date);
+        return dateB.getTime() - dateA.getTime();
+      });
+  };
   
   const history = getProductStockHistory(product.id);
   
@@ -23,7 +34,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
       
       // Trouver le stock à cette date
       const dayMovements = history.filter(movement => {
-        const movementDate = new Date(movement.date);
+        const movementDate = new Date(movement.adjustmentDateTime || movement.date);
         return movementDate <= date;
       });
       
@@ -31,8 +42,10 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
       
       days.push({
         date: date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+        fullDate: date,
         stock,
-        isToday: i === 0
+        isToday: i === 0,
+        hasMovement: dayMovements.length > 0
       });
     }
     
@@ -95,6 +108,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
       <div className="h-32 flex items-end space-x-1 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
         {chartData.map((point, index) => {
           const height = maxStock > 0 ? (point.stock / maxStock) * 100 : 0;
+            const hasMovement = day.hasMovement;
           const isLowStock = point.stock <= product.minStock;
           
           return (
@@ -104,11 +118,16 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
                   point.isToday 
                     ? 'bg-gradient-to-t from-purple-400 to-purple-500 ring-2 ring-purple-300' 
                     : isLowStock 
-                      ? 'bg-gradient-to-t from-red-400 to-red-500'
+                        : hasMovement
+                          ? 'bg-gradient-to-t from-green-400 to-green-500'
+                          : 'bg-gradient-to-t from-blue-400 to-blue-500'
                       : 'bg-gradient-to-t from-blue-400 to-blue-500'
                 }`}
-                style={{ height: `${Math.max(height, 2)}%` }}
+                  title={`${day.date}: ${day.stock.toFixed(1)} ${product.unit}${hasMovement ? ' (mouvement)' : ''}`}
                 title={`${point.date}: ${point.stock.toFixed(1)} ${product.unit}`}
+                {hasMovement && (
+                  <div className="absolute top-0 w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                )}
               />
               {index % 5 === 0 && (
                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 transform -rotate-45 origin-left">
@@ -120,10 +139,24 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
         })}
       </div>
 
-      {/* Ligne de seuil minimum */}
-      <div className="mt-2 flex items-center justify-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-        <div className="w-3 h-3 bg-red-400 rounded"></div>
-        <span>Stock en dessous du seuil minimum ({product.minStock.toFixed(1)} {product.unit})</span>
+      {/* Légende améliorée */}
+      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-500 dark:text-gray-400">
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-blue-400 rounded"></div>
+          <span>Stock normal</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-green-400 rounded"></div>
+          <span>Jour avec mouvement</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-red-400 rounded"></div>
+          <span>Stock faible</span>
+        </div>
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-purple-400 rounded ring-2 ring-purple-300"></div>
+          <span>Aujourd'hui</span>
+        </div>
       </div>
     </div>
   );

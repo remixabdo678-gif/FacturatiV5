@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { Product } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
-import StockEvolutionChart from './StockEvolutionChart';
+import EnhancedStockEvolutionChart from './EnhancedStockEvolutionChart';
 import { 
   Package, 
   TrendingUp, 
@@ -13,7 +13,8 @@ import {
   Calendar,
   User,
   FileText,
-  BarChart3
+  BarChart3,
+  Clock
 } from 'lucide-react';
 
 interface StockHistoryModalProps {
@@ -57,7 +58,7 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
           history.push({
             id: `sale-${invoice.id}-${item.id}`,
             type: 'sale',
-            date: invoice.date,
+            date: invoice.createdAt, // Utiliser createdAt pour avoir l'heure exacte
             quantity: -item.quantity,
             previousStock,
             newStock: previousStock - item.quantity,
@@ -89,7 +90,11 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
     });
     
     // Trier par date
-    return history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return history.sort((a, b) => {
+      const dateA = new Date(a.adjustmentDateTime || a.date);
+      const dateB = new Date(b.adjustmentDateTime || b.date);
+      return dateB.getTime() - dateA.getTime();
+    });
   };
   
   const history = generateProductHistory();
@@ -170,9 +175,10 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
 
   const exportStockReport = () => {
     const csvContent = [
-      ['Date', 'Type', 'Quantité', 'Stock Précédent', 'Nouveau Stock', 'Motif', 'Référence', 'Utilisateur'].join(','),
+      ['Date', 'Heure', 'Type', 'Quantité', 'Stock Précédent', 'Nouveau Stock', 'Motif', 'Référence', 'Utilisateur'].join(','),
       ...filteredHistory.map(h => [
-        new Date(h.date).toLocaleDateString('fr-FR'),
+        new Date(h.adjustmentDateTime || h.date).toLocaleDateString('fr-FR'),
+        new Date(h.adjustmentDateTime || h.date).toLocaleTimeString('fr-FR'),
         getMovementLabel(h.type),
         h.quantity,
         h.previousStock,
@@ -299,7 +305,10 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
         </div>
 
         {/* Liste des mouvements */}
-        <StockEvolutionChart product={product} />
+        <EnhancedStockEvolutionChart 
+          product={product} 
+          movements={filteredHistory}
+        />
 
         <div className="max-h-96 overflow-y-auto">
           <div className="space-y-3">
@@ -322,7 +331,11 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
                       <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                         <div className="flex items-center space-x-1">
                           <Calendar className="w-3 h-3" />
-                          <span>{new Date(movement.date).toLocaleDateString('fr-FR')}</span>
+                          <span>{new Date(movement.adjustmentDateTime || movement.date).toLocaleDateString('fr-FR')}</span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <Clock className="w-3 h-3" />
+                          <span>{new Date(movement.adjustmentDateTime || movement.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <User className="w-3 h-3" />

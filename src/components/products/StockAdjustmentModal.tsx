@@ -18,6 +18,15 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
   const [adjustmentType, setAdjustmentType] = useState<'set' | 'add' | 'subtract'>('add');
   const [quantity, setQuantity] = useState(0);
   const [reason, setReason] = useState('');
+  const [adjustmentDateTime, setAdjustmentDateTime] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const predefinedReasons = [
@@ -88,7 +97,8 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
         reason: reason.trim(),
         userId: user.id,
         userName: user.name,
-        date: new Date().toISOString().split('T')[0]
+        date: adjustmentDateTime,
+        adjustmentDateTime: new Date(adjustmentDateTime).toISOString()
       });
 
       // Mettre à jour le stock du produit directement
@@ -204,6 +214,21 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
         </div>
 
         {/* Motif */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Date et heure de rectification
+          </label>
+          <input
+            type="datetime-local"
+            value={adjustmentDateTime}
+            onChange={(e) => setAdjustmentDateTime(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Date et heure exactes de la rectification pour traçabilité
+          </p>
+        </div>
+        
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
             Motif de rectification *

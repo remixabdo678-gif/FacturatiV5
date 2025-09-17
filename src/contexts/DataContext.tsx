@@ -28,6 +28,7 @@ export interface StockMovement {
   userId: string;
   userName: string;
   date: string;
+  adjustmentDateTime?: string; // Date et heure exactes pour les rectifications
   createdAt: string;
   entrepriseId: string;
 }
@@ -605,7 +606,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           reason: 'Stock initial',
           userId: user.id,
           userName: user.name,
-          date: new Date().toISOString().split('T')[0]
+          date: new Date().toISOString().split('T')[0],
+          adjustmentDateTime: new Date().toISOString()
         });
       }
     } catch (error) {
@@ -701,7 +703,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             reference: invoiceNumber,
             userId: user.id,
             userName: user.name,
-            date: invoiceData.date
+            date: invoiceData.date,
+            adjustmentDateTime: new Date().toISOString()
           });
         }
       }
