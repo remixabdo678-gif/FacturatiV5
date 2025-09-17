@@ -29,6 +29,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
       
     }
     
+    
     // 2. Ventes (depuis les factures)
     invoices.forEach(invoice => {
       invoice.items.forEach(item => {
