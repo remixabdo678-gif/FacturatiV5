@@ -17,6 +17,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
     salePrice: product.salePrice,
     unit: product.unit || 'Kg',
     customUnit: '',
+    initialStock: product.initialStock || product.stock,
     stock: product.stock,
     minStock: product.minStock,
     status: product.status
@@ -176,18 +177,40 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
           
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Stock initial
+              Stock initial (lecture seule)
+            </label>
+            <input
+              type="number"
+              name="initialStock"
+              value={formData.initialStock}
+              disabled
+              min="0"
+              step="0.001"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
+                         bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
+            />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Le stock initial ne peut pas être modifié après création
+            </p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Stock actuel (lecture seule)
             </label>
             <input
               type="number"
               name="stock"
               value={formData.stock}
-              onChange={handleChange}
+              disabled
               min="0"
+              step="0.001"
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg 
-                         focus:ring-2 focus:ring-teal-500 focus:border-transparent 
-                         bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                         bg-gray-50 dark:bg-gray-600 text-gray-500 dark:text-gray-400"
             />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              Utilisez le bouton "Rectifier Stock" pour modifier le stock
+            </p>
           </div>
           
           <div>

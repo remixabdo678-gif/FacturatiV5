@@ -6,6 +6,7 @@ import { DataProvider } from './contexts/DataContext';
 import { LicenseProvider } from './contexts/LicenseContext';
 import { UserManagementProvider } from './contexts/UserManagementContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { StockProvider } from './contexts/StockContext';
 import ExpirationNotification from './components/auth/ExpirationNotification';
 import ExpiredAccountModal from './components/auth/ExpiredAccountModal';
 import EmailVerificationBanner from './components/auth/EmailVerificationBanner';
@@ -261,13 +262,15 @@ function App() {
       <LanguageProvider>
         <AuthProvider>
           <UserManagementProvider>
-            <SupplierProvider>
-              <DataProvider>
-                <LicenseProvider>
-                  <AppContent />
-                </LicenseProvider>
-              </DataProvider>
-            </SupplierProvider>
+            <StockProvider>
+              <SupplierProvider>
+                <DataProvider>
+                  <LicenseProvider>
+                    <AppContent />
+                  </LicenseProvider>
+                </DataProvider>
+              </SupplierProvider>
+            </StockProvider>
           </UserManagementProvider>
         </AuthProvider>
       </LanguageProvider>

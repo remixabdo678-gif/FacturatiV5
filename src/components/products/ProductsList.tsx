@@ -1,22 +1,34 @@
 import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
+import { useStock } from '../../contexts/StockContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import AddProductModal from './AddProductModal';
 import EditProductModal from './EditProductModal';
-import { Plus, Search, Edit, Trash2, AlertTriangle, Package } from 'lucide-react';
+import StockAdjustmentModal from './StockAdjustmentModal';
+import StockHistoryModal from './StockHistoryModal';
+import { Plus, Search, Edit, Trash2, AlertTriangle, Package, RotateCcw, History, TrendingUp, TrendingDown } from 'lucide-react';
+import StockOverviewWidget from './StockOverviewWidget';
+import StockAlertsWidget from './StockAlertsWidget';
 
 export default function ProductsList() {
   const { t } = useLanguage();
   const { products, deleteProduct, invoices } = useData();
+  const { getProductStockSummary, calculateCurrentStock } = useStock();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [adjustingStock, setAdjustingStock] = useState<string | null>(null);
+  const [viewingHistory, setViewingHistory] = useState<string | null>(null);
 
   const getProductStats = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return { remainingStock: 0, ordersCount: 0, totalOrdered: 0 };
 
-    // Calculate total ordered quantity from all invoices
+    // Utiliser le stock calculé depuis le contexte Stock
+    const currentStock = calculateCurrentStock(productId);
+    const remainingStock = currentStock;
+
+    // Calculate total ordered quantity from all invoices (pour compatibilité)
     let totalOrdered = 0;
     let ordersCount = 0;
     const ordersSet = new Set();
@@ -35,7 +47,6 @@ export default function ProductsList() {
     });
 
     ordersCount = ordersSet.size;
-    const remainingStock = product.stock - totalOrdered;
 
     return { remainingStock, ordersCount, totalOrdered };
   };
@@ -78,7 +89,19 @@ export default function ProductsList() {
   const handleEditProduct = (id: string) => {
     setEditingProduct(id);
   };
+
+  const getLastStockAdjustment = (productId: string) => {
+    const summary = getProductStockSummary(productId);
+    if (!summary || summary.totalAdjustments === 0) return null;
+    
+    return {
+      quantity: summary.totalAdjustments,
+      date: summary.lastMovementDate
+    };
+  };
+
   return (
+    <>
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('products')}</h1>
@@ -92,6 +115,9 @@ export default function ProductsList() {
       </div>
 
       {/* Search and Stats */}
+      <StockOverviewWidget />
+      <StockAlertsWidget />
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
@@ -112,26 +138,28 @@ export default function ProductsList() {
         
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <Package className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center">
+              <RotateCcw className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{products.length}</p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Produits Total</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                {stockMovements.filter(m => m.type === 'adjustment').length}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Rectifications</p>
             </div>
           </div>
         </div>
         
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
-              <AlertTriangle className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {products.filter(p => p.stock <= p.minStock).length}
+                {stockMovements.filter(m => m.type === 'sale').length}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Stock Faible</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Ventes</p>
             </div>
           </div>
         </div>
@@ -163,6 +191,9 @@ export default function ProductsList() {
                   Stock Restant
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Stock Rectif
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Statut
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -173,6 +204,7 @@ export default function ProductsList() {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredProducts.map((product) => {
                 const stats = getProductStats(product.id);
+                const lastAdjustment = getLastStockAdjustment(product.id);
                 
                 return (
                 <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
@@ -219,10 +251,38 @@ export default function ProductsList() {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    {lastAdjustment ? (
+                      <div className="text-sm">
+                        <span className={`font-medium ${lastAdjustment.quantity >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {lastAdjustment.quantity > 0 ? '+' : ''}{lastAdjustment.quantity.toFixed(1)}
+                        </span>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          le {new Date(lastAdjustment.date).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400 dark:text-gray-500">Aucune rectif</span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {getStatusBadge(product)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center space-x-3">
+                      <button 
+                        onClick={() => setViewingHistory(product.id)}
+                        className="text-purple-600 hover:text-purple-700 transition-colors"
+                        title="Aperçu Stock"
+                      >
+                        <History className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => setAdjustingStock(product.id)}
+                        className="text-blue-600 hover:text-blue-700 transition-colors"
+                        title="Rectifier Stock"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
                       <button 
                         onClick={() => handleEditProduct(product.id)}
                         className="text-amber-600 hover:text-amber-700 transition-colors"
@@ -265,6 +325,24 @@ export default function ProductsList() {
           product={products.find(p => p.id === editingProduct)!}
         />
       )}
+
+      {adjustingStock && (
+        <StockAdjustmentModal
+          isOpen={!!adjustingStock}
+          onClose={() => setAdjustingStock(null)}
+          product={products.find(p => p.id === adjustingStock)!}
+          currentStock={calculateCurrentStock(adjustingStock)}
+        />
+      )}
+
+      {viewingHistory && (
+        <StockHistoryModal
+          isOpen={!!viewingHistory}
+          onClose={() => setViewingHistory(null)}
+          product={products.find(p => p.id === viewingHistory)!}
+        />
+      )}
     </div>
+    </>
   );
 }

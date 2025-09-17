@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
+import { useStock } from './StockContext';
 import { convertNumberToWords } from '../utils/numberToWords';
 
 export interface Client {
@@ -34,6 +35,7 @@ export interface Product {
   purchasePrice: number;
   salePrice: number;
   unit: string;
+  initialStock: number;
   stock: number;
   minStock: number;
   status: 'active' | 'inactive';
@@ -255,6 +257,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuth();
+  const stockContext = React.useContext(require('./StockContext').StockContext);
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -551,12 +554,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
       // Générer un SKU automatique si pas fourni
       const sku = generateSKU(productData.name, productData.category);
       
-      await addDoc(collection(db, 'products'), {
+      const docRef = await addDoc(collection(db, 'products'), {
         ...productData,
         sku,
         entrepriseId: user.isAdmin ? user.id : user.entrepriseId,
         createdAt: new Date().toISOString()
       });
+
+      // Ajouter le mouvement de stock initial si stockContext est disponible
+      if (stockContext && productData.initialStock > 0) {
+        await stockContext.addStockMovement({
+          productId: docRef.id,
+          productName: productData.name,
+          type: 'initial',
+          quantity: productData.initialStock,
+          previousStock: 0,
+          newStock: productData.initialStock,
+          reason: 'Stock initial',
+          userId: user.id,
+          userName: user.name,
+          date: new Date().toISOString().split('T')[0]
+        });
+      }
     } catch (error) {
       console.error('Erreur lors de l\'ajout du produit:', error);
     }
@@ -599,7 +618,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       
       const totalInWords = convertNumberToWords(invoiceData.totalTTC);
       
-      await addDoc(collection(db, 'invoices'), {
+      const docRef = await addDoc(collection(db, 'invoices'), {
         ...invoiceData,
         number: invoiceNumber,
         totalInWords,
@@ -608,8 +627,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString()
       });
 
-      // Note: Le stock initial ne change jamais
-      // Les quantités vendues sont calculées dynamiquement depuis les factures
+      // Ajouter les mouvements de stock pour chaque article vendu
+      if (stockContext) {
+        for (const item of invoiceData.items) {
+          const product = products.find(p => p.name === item.description);
+          if (product) {
+            const currentStock = stockContext.calculateCurrentStock(product.id);
+            await stockContext.addStockMovement({
+              productId: product.id,
+              productName: product.name,
+              type: 'sale',
+              quantity: -item.quantity, // Négatif pour une sortie
+              previousStock: currentStock,
+              newStock: currentStock - item.quantity,
+              reason: 'Vente',
+              reference: invoiceNumber,
+              userId: user.id,
+              userName: user.name,
+              date: invoiceData.date
+            });
+          }
+        }
+      }
     } catch (error) {
       console.error('Erreur lors de l\'ajout de la facture:', error);
     }
