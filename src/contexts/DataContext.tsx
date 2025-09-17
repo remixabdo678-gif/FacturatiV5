@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode,  require } from 'react';
 import { 
   collection, 
   doc, 
@@ -8,7 +8,6 @@ import {
   getDocs, 
   query, 
   where, 
-  require,
   orderBy,
   onSnapshot
 } from 'firebase/firestore';
