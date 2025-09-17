@@ -269,7 +269,6 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
 
        
         {/* Liste des mouvements */}
-        <EnhancedStockEvolutionChart 
           product={product} 
           movements={filteredHistory}
         />
