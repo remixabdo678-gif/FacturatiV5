@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useStock } from '../../contexts/StockContext';
 import { Product } from '../../contexts/DataContext';
-import { BarChart3, TrendingUp, TrendingDown, Package, Calendar, Clock, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Package, Activity } from 'lucide-react';
 
 interface StockEvolutionChartProps {
   product: Product;
@@ -12,10 +12,9 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
   const { getProductStockHistory } = useStock();
   
   const history = getProductStockHistory(product.id);
-  
+
   // Générer les données avec points de mouvement
   const generateChartData = () => {
-    // Utiliser directement l'historique des mouvements pour créer la courbe
     return history.slice(0, 30).reverse().map((movement, index) => ({
       date: new Date(movement.dateTime).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
       dateTime: movement.dateTime,
@@ -38,17 +37,18 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
   const getMovementColor = (type: string) => {
     switch (type) {
       case 'sale':
-        return 'bg-red-500';
+        return '#EF4444'; // red-500
       case 'adjustment':
-        return 'bg-purple-500';
+        return '#A855F7'; // purple-500
       case 'initial':
-        return 'bg-blue-500';
+        return '#3B82F6'; // blue-500
       case 'return':
-        return 'bg-green-500';
+        return '#22C55E'; // green-500
       default:
-        return 'bg-gray-500';
+        return '#6B7280'; // gray-500
     }
   };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -63,7 +63,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           >
             <Activity className="w-6 h-6 text-purple-600" />
-          </div>
+          </motion.div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Évolution du Stock - {product.name}
@@ -135,7 +135,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
         {/* Ligne de seuil minimum */}
         <div 
           className="absolute left-4 right-4 border-t-2 border-dashed border-red-400 z-10"
-          style={{ bottom: `${20 + (product.minStock / maxStock) * 60}%` }}
+          style={{ bottom: `${(product.minStock / maxStock) * 80}%` }}
         >
           <span className="absolute -top-6 right-0 text-xs text-red-600 bg-white dark:bg-gray-800 px-2 py-1 rounded">
             Seuil min: {product.minStock.toFixed(1)} {product.unit}
@@ -175,9 +175,13 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
                 cx={`${x}%`}
                 cy={`${y}%`}
                 r="4"
-                className={`${getMovementColor(point.type)} cursor-pointer hover:scale-125 transition-transform`}
-                title={`${new Date(point.dateTime).toLocaleDateString('fr-FR')} ${new Date(point.dateTime).toLocaleTimeString('fr-FR')}: ${point.reason} - ${point.quantity > 0 ? '+' : ''}${point.quantity.toFixed(3)} ${product.unit}`}
-              />
+                fill={getMovementColor(point.type)} // ✅ Correction ici
+              >
+                <title>
+                  {new Date(point.dateTime).toLocaleDateString('fr-FR')} {new Date(point.dateTime).toLocaleTimeString('fr-FR')}  
+                  : {point.reason} - {point.quantity > 0 ? '+' : ''}{point.quantity.toFixed(3)} {product.unit}
+                </title>
+              </motion.circle>
             );
           })}
         </svg>
@@ -193,7 +197,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
         </div>
       </motion.div>
 
-      {/* Légende améliorée */}
+      {/* Légende */}
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -216,7 +220,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
           <div className="w-3 h-3 bg-red-400 rounded border-dashed border-2 border-red-600"></div>
           <span className="text-xs text-orange-700 dark:text-orange-300">Seuil minimum</span>
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
