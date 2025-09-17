@@ -34,10 +34,13 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
     'Autre'
   ];
 
-  const units = [
+   const units = [
     { value: 'Kg', label: 'Kg' },
     { value: 'Litre', label: 'Litre' },
     { value: 'Tonne', label: 'Tonne' },
+     { value: 'Boite', label: 'Boite' },
+     { value: 'Paque', label: 'Paque' },
+    { value: 'unit', label: 'unit' },
     { value: 'Autre', label: 'Autre' }
   ];
 
