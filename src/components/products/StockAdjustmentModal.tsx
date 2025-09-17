@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useStock } from '../../contexts/StockContext';
 import { useData } from '../../contexts/DataContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Product } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import { Package, Plus, Minus, RotateCcw, AlertTriangle } from 'lucide-react';
@@ -13,8 +13,8 @@ interface StockAdjustmentModalProps {
 }
 
 export default function StockAdjustmentModal({ isOpen, onClose, product, currentStock }: StockAdjustmentModalProps) {
-  const { addStockAdjustment } = useStock();
-  const { updateProduct } = useData();
+  const { updateProduct, addStockMovement } = useData();
+  const { user } = useAuth();
   const [adjustmentType, setAdjustmentType] = useState<'set' | 'add' | 'subtract'>('add');
   const [quantity, setQuantity] = useState(0);
   const [reason, setReason] = useState('');
@@ -67,6 +67,10 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
       return;
     }
 
+    if (!user) {
+      alert('Utilisateur non connecté');
+      return;
+    }
     setIsSubmitting(true);
     
     try {
@@ -74,13 +78,18 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
       const newStock = calculateNewStock();
       
       // Ajouter le mouvement de stock
-      await addStockAdjustment(
-        product.id,
-        product.name,
-        adjustmentQuantity,
-        reason.trim(),
-        currentStock
-      );
+      await addStockMovement({
+        productId: product.id,
+        productName: product.name,
+        type: 'adjustment',
+        quantity: adjustmentQuantity,
+        previousStock: currentStock,
+        newStock: newStock,
+        reason: reason.trim(),
+        userId: user.id,
+        userName: user.name,
+        date: new Date().toISOString().split('T')[0]
+      });
 
       // Mettre à jour le stock du produit directement
       await updateProduct(product.id, { stock: newStock });

@@ -1,51 +1,65 @@
 import React from 'react';
 import { useData } from '../../contexts/DataContext';
-import { useStock } from '../../contexts/StockContext';
 import { Package, TrendingUp, TrendingDown, AlertTriangle, BarChart3 } from 'lucide-react';
 
 export default function StockOverviewWidget() {
-  const { products } = useData();
-  const { calculateCurrentStock, stockMovements, getProductStockSummary } = useStock(); // ✅ Correction ici
+  const { products, invoices, stockMovements } = useData();
+
+  // Calculer le stock actuel selon la formule correcte
+  const calculateCurrentStock = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return 0;
+
+    // Stock initial
+    const initialStock = product.initialStock || 0;
+
+    // Total des rectifications
+    const adjustments = stockMovements
+      .filter(m => m.productId === productId && m.type === 'adjustment')
+      .reduce((sum, m) => sum + m.quantity, 0);
+
+    // Total des ventes
+    const sales = invoices.reduce((sum, invoice) => {
+      return sum + invoice.items
+        .filter(item => item.description === product.name)
+        .reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+
+    return initialStock + adjustments - sales;
+  };
 
   // Calculer les statistiques globales
   const totalProducts = products.length;
   const lowStockProducts = products.filter(product => {
-    // Calculer le stock restant : stock initial - quantité vendue + rectifications
-    const summary = getProductStockSummary(product.id);
-    const totalAdjustments = summary ? summary.totalAdjustments : 0;
-    const totalSales = summary ? summary.totalSales : 0;
-    const remainingStock = (product.initialStock || 0) - totalSales + totalAdjustments;
-    return remainingStock <= (product.minStock || 0);
+    const remainingStock = calculateCurrentStock(product.id);
+    return remainingStock <= product.minStock;
   }).length;
 
   const outOfStockProducts = products.filter(product => {
-    // Calculer le stock restant : stock initial - quantité vendue + rectifications
-    const summary = getProductStockSummary(product.id);
-    const totalAdjustments = summary ? summary.totalAdjustments : 0;
-    const totalSales = summary ? summary.totalSales : 0;
-    const remainingStock = (product.initialStock || 0) - totalSales + totalAdjustments;
+    const remainingStock = calculateCurrentStock(product.id);
     return remainingStock <= 0;
   }).length;
 
   const totalStockValue = products.reduce((sum, product) => {
-    // Calculer le stock restant : stock initial - quantité vendue + rectifications
-    const summary = getProductStockSummary(product.id);
-    const totalAdjustments = summary ? summary.totalAdjustments : 0;
-    const totalSales = summary ? summary.totalSales : 0;
-    const remainingStock = (product.initialStock || 0) - totalSales + totalAdjustments;
+    const remainingStock = calculateCurrentStock(product.id);
     return sum + (remainingStock * (product.purchasePrice || 0));
   }, 0);
 
   // Mouvements récents (7 derniers jours)
-  const recentMovements = stockMovements.filter(movement => {
+  const recentMovements = stockMovements?.filter(movement => {
     const movementDate = new Date(movement.date);
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     return movementDate >= sevenDaysAgo;
-  });
+  }) || [];
 
   const recentAdjustments = recentMovements.filter(m => m.type === 'adjustment').length;
-  const recentSales = recentMovements.filter(m => m.type === 'sale').length;
+  const recentSales = invoices.filter(invoice => {
+    const invoiceDate = new Date(invoice.date);
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return invoiceDate >= sevenDaysAgo;
+  }).length;
 
   const stats = [
     {

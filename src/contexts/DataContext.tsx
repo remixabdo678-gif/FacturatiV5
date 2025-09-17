@@ -13,9 +13,24 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
-import { useStock } from './StockContext';
 import { convertNumberToWords } from '../utils/numberToWords';
 
+export interface StockMovement {
+  id: string;
+  productId: string;
+  productName: string;
+  type: 'initial' | 'sale' | 'adjustment' | 'return';
+  quantity: number; // Positif pour entrée, négatif pour sortie
+  previousStock: number;
+  newStock: number;
+  reason?: string;
+  reference?: string; // Numéro de facture, commande, etc.
+  userId: string;
+  userName: string;
+  date: string;
+  createdAt: string;
+  entrepriseId: string;
+}
 export interface Client {
   id: string;
   name: string;
@@ -212,6 +227,7 @@ interface DataContextType {
   tasks: Task[];
   projectComments: ProjectComment[];
   projectFiles: ProjectFile[];
+  stockMovements: StockMovement[];
   addClient: (client: Omit<Client, 'id' | 'createdAt' | 'entrepriseId'>) => Promise<void>;
   updateClient: (id: string, client: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
@@ -243,6 +259,7 @@ interface DataContextType {
   deleteTask: (id: string) => Promise<void>;
   addProjectComment: (comment: Omit<ProjectComment, 'id' | 'createdAt' | 'entrepriseId'>) => Promise<void>;
   addProjectFile: (file: Omit<ProjectFile, 'id' | 'createdAt' | 'entrepriseId'>) => Promise<void>;
+  addStockMovement: (movement: Omit<StockMovement, 'id' | 'createdAt' | 'entrepriseId'>) => Promise<void>;
   getClientById: (id: string) => Client | undefined;
   getProductById: (id: string) => Product | undefined;
   getInvoiceById: (id: string) => Invoice | undefined;
@@ -257,7 +274,6 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuth();
-const stockContext = useStock();
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -269,6 +285,7 @@ const stockContext = useStock();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projectComments, setProjectComments] = useState<ProjectComment[]>([]);
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([]);
+  const [stockMovements, setStockMovements] = useState<StockMovement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Générer un SKU automatique pour les produits
@@ -340,6 +357,19 @@ const stockContext = useStock();
       setIsLoading(false);
     });
 
+    // Mouvements de stock
+    const stockMovementsQuery = query(
+      collection(db, 'stockMovements'),
+      where('entrepriseId', '==', entrepriseId),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubscribeStockMovements = onSnapshot(stockMovementsQuery, (snapshot) => {
+      const movementsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as StockMovement));
+      setStockMovements(movementsData);
+    });
     // Employés
     const employeesQuery = query(
       collection(db, 'employees'),
@@ -436,6 +466,7 @@ const stockContext = useStock();
       unsubscribeProducts();
       unsubscribeInvoices();
       unsubscribeQuotes();
+      unsubscribeStockMovements();
       unsubscribeEmployees();
       unsubscribeOvertimes();
       unsubscribeLeaves();
@@ -562,9 +593,9 @@ const stockContext = useStock();
         createdAt: new Date().toISOString()
       });
 
-      // Ajouter le mouvement de stock initial si stockContext est disponible
-      if (stockContext && productData.initialStock > 0) {
-        await stockContext.addStockMovement({
+      // Ajouter le mouvement de stock initial
+      if (productData.initialStock > 0) {
+        await addStockMovement({
           productId: docRef.id,
           productName: productData.name,
           type: 'initial',
@@ -609,6 +640,20 @@ const stockContext = useStock();
     }
   };
 
+  // Mouvements de stock
+  const addStockMovement = async (movementData: Omit<StockMovement, 'id' | 'createdAt' | 'entrepriseId'>) => {
+    if (!user) return;
+    
+    try {
+      await addDoc(collection(db, 'stockMovements'), {
+        ...movementData,
+        entrepriseId: user.isAdmin ? user.id : user.entrepriseId,
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du mouvement de stock:', error);
+    }
+  };
   // Factures
   const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'number' | 'createdAt' | 'entrepriseId' | 'dueDate' | 'totalInWords'>, invoiceDate?: string) => {
     if (!user) return;
@@ -629,25 +674,35 @@ const stockContext = useStock();
       });
 
       // Ajouter les mouvements de stock pour chaque article vendu
-      if (stockContext) {
-        for (const item of invoiceData.items) {
-          const product = products.find(p => p.name === item.description);
-          if (product) {
-            const currentStock = stockContext.calculateCurrentStock(product.id);
-            await stockContext.addStockMovement({
-              productId: product.id,
-              productName: product.name,
-              type: 'sale',
-              quantity: -item.quantity, // Négatif pour une sortie
-              previousStock: currentStock,
-              newStock: currentStock - item.quantity,
-              reason: 'Vente',
-              reference: invoiceNumber,
-              userId: user.id,
-              userName: user.name,
-              date: invoiceData.date
-            });
-          }
+      for (const item of invoiceData.items) {
+        const product = products.find(p => p.name === item.description);
+        if (product) {
+          // Calculer le stock actuel avant cette vente
+          const initialStock = product.initialStock || 0;
+          const adjustments = stockMovements
+            .filter(m => m.productId === product.id && m.type === 'adjustment')
+            .reduce((sum, m) => sum + m.quantity, 0);
+          const previousSales = invoices.reduce((sum, invoice) => {
+            return sum + invoice.items
+              .filter(invItem => invItem.description === product.name)
+              .reduce((itemSum, invItem) => itemSum + invItem.quantity, 0);
+          }, 0);
+          
+          const currentStock = initialStock + adjustments - previousSales;
+          
+          await addStockMovement({
+            productId: product.id,
+            productName: product.name,
+            type: 'sale',
+            quantity: -item.quantity, // Négatif pour une sortie
+            previousStock: currentStock,
+            newStock: currentStock - item.quantity,
+            reason: 'Vente',
+            reference: invoiceNumber,
+            userId: user.id,
+            userName: user.name,
+            date: invoiceData.date
+          });
         }
       }
     } catch (error) {
@@ -955,6 +1010,7 @@ const stockContext = useStock();
     tasks,
     projectComments,
     projectFiles,
+    stockMovements,
     addClient,
     updateClient,
     deleteClient,
@@ -986,6 +1042,7 @@ const stockContext = useStock();
     deleteTask,
     addProjectComment,
     addProjectFile,
+    addStockMovement,
     getClientById,
     getProductById,
     getInvoiceById,

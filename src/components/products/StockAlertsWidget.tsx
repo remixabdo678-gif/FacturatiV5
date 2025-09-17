@@ -1,15 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
-import { useStock } from '../../contexts/StockContext';
 import { AlertTriangle, Package, X, Bell, TrendingDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StockAlertsWidget() {
-  const { products } = useData();
-const { calculateCurrentStock, getProductStockSummary } = useStock();
+  const { products, invoices, stockMovements } = useData();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
 
+  // Calculer le stock actuel selon la formule correcte
+  const calculateCurrentStock = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return 0;
+
+    // Stock initial
+    const initialStock = product.initialStock || 0;
+
+    // Total des rectifications
+    const adjustments = stockMovements
+      .filter(m => m.productId === productId && m.type === 'adjustment')
+      .reduce((sum, m) => sum + m.quantity, 0);
+
+    // Total des ventes
+    const sales = invoices.reduce((sum, invoice) => {
+      return sum + invoice.items
+        .filter(item => item.description === product.name)
+        .reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+
+    return initialStock + adjustments - sales;
+  };
   useEffect(() => {
     // Générer les alertes de stock
     const newAlerts = products
@@ -46,7 +66,7 @@ const { calculateCurrentStock, getProductStockSummary } = useStock();
       .filter(alert => !dismissedAlerts.has(alert!.id));
 
     setAlerts(newAlerts);
-  }, [products, calculateCurrentStock, dismissedAlerts]);
+  }, [products, invoices, stockMovements, dismissedAlerts]);
 
   const dismissAlert = (alertId: string) => {
     setDismissedAlerts(prev => new Set([...prev, alertId]));

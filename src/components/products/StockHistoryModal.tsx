@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useStock } from '../../contexts/StockContext';
+import { useData } from '../../contexts/DataContext';
 import { Product } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
 import StockEvolutionChart from './StockEvolutionChart';
@@ -23,11 +23,97 @@ interface StockHistoryModalProps {
 }
 
 export default function StockHistoryModal({ isOpen, onClose, product }: StockHistoryModalProps) {
-  const { getProductStockHistory, getProductStockSummary, exportStockReport } = useStock();
+  const { stockMovements, invoices } = useData();
   const [selectedPeriod, setSelectedPeriod] = useState('all');
   
-  const history = getProductStockHistory(product.id);
-  const summary = getProductStockSummary(product.id);
+  // Générer l'historique complet du produit
+  const generateProductHistory = () => {
+    const history = [];
+    
+    // 1. Stock initial
+    if (product.initialStock > 0) {
+      history.push({
+        id: `initial-${product.id}`,
+        type: 'initial',
+        date: product.createdAt,
+        quantity: product.initialStock,
+        previousStock: 0,
+        newStock: product.initialStock,
+        reason: 'Stock initial',
+        userName: 'Système',
+        reference: ''
+      });
+    }
+    
+    // 2. Ventes (depuis les factures)
+    invoices.forEach(invoice => {
+      invoice.items.forEach(item => {
+        if (item.description === product.name) {
+          const previousMovements = history.filter(h => new Date(h.date) <= new Date(invoice.date));
+          const previousStock = previousMovements.length > 0 
+            ? previousMovements[previousMovements.length - 1].newStock 
+            : product.initialStock;
+          
+          history.push({
+            id: `sale-${invoice.id}-${item.id}`,
+            type: 'sale',
+            date: invoice.date,
+            quantity: -item.quantity,
+            previousStock,
+            newStock: previousStock - item.quantity,
+            reason: 'Vente',
+            userName: 'Système',
+            reference: invoice.number
+          });
+        }
+      });
+    });
+    
+    // 3. Rectifications (depuis les mouvements de stock)
+    const adjustments = stockMovements.filter(m => 
+      m.productId === product.id && m.type === 'adjustment'
+    );
+    
+    adjustments.forEach(adjustment => {
+      history.push({
+        id: adjustment.id,
+        type: 'adjustment',
+        date: adjustment.date,
+        quantity: adjustment.quantity,
+        previousStock: adjustment.previousStock,
+        newStock: adjustment.newStock,
+        reason: adjustment.reason || 'Rectification',
+        userName: adjustment.userName,
+        reference: adjustment.reference || ''
+      });
+    });
+    
+    // Trier par date
+    return history.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+  
+  const history = generateProductHistory();
+  
+  // Calculer le résumé
+  const summary = {
+    initialStock: product.initialStock || 0,
+    totalSales: invoices.reduce((sum, invoice) => {
+      return sum + invoice.items
+        .filter(item => item.description === product.name)
+        .reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0),
+    totalAdjustments: stockMovements
+      .filter(m => m.productId === product.id && m.type === 'adjustment')
+      .reduce((sum, m) => sum + m.quantity, 0),
+    currentStock: (product.initialStock || 0) + 
+      stockMovements.filter(m => m.productId === product.id && m.type === 'adjustment')
+        .reduce((sum, m) => sum + m.quantity, 0) -
+      invoices.reduce((sum, invoice) => {
+        return sum + invoice.items
+          .filter(item => item.description === product.name)
+          .reduce((itemSum, item) => itemSum + item.quantity, 0);
+      }, 0)
+  };
 
   // Filtrer par période
   const filteredHistory = history.filter(movement => {
@@ -82,6 +168,31 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
     return quantity > 0 ? 'text-green-600' : quantity < 0 ? 'text-red-600' : 'text-gray-600';
   };
 
+  const exportStockReport = () => {
+    const csvContent = [
+      ['Date', 'Type', 'Quantité', 'Stock Précédent', 'Nouveau Stock', 'Motif', 'Référence', 'Utilisateur'].join(','),
+      ...filteredHistory.map(h => [
+        new Date(h.date).toLocaleDateString('fr-FR'),
+        getMovementLabel(h.type),
+        h.quantity,
+        h.previousStock,
+        h.newStock,
+        h.reason || '',
+        h.reference || '',
+        h.userName
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `historique_${product.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   // Générer les données pour le mini graphique
   const generateChartData = () => {
     const last30Days = history
@@ -116,7 +227,7 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
               </div>
             </div>
             <button
-              onClick={() => exportStockReport(product.id)}
+              onClick={exportStockReport}
               className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <Download className="w-4 h-4" />
@@ -221,6 +332,13 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
                           <div className="flex items-center space-x-1">
                             <FileText className="w-3 h-3" />
                             <span>{movement.reason}</span>
+                          </div>
+                        )}
+                        {movement.reference && (
+                          <div className="flex items-center space-x-1">
+                            <span className="font-mono text-xs bg-gray-200 dark:bg-gray-600 px-1 rounded">
+                              {movement.reference}
+                            </span>
                           </div>
                         )}
                       </div>

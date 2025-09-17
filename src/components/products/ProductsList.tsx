@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
-import { useStock } from '../../contexts/StockContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import AddProductModal from './AddProductModal';
 import EditProductModal from './EditProductModal';
@@ -13,24 +12,79 @@ import StockAlertsWidget from './StockAlertsWidget';
 
 export default function ProductsList() {
   const { t } = useLanguage();
-  const { products, deleteProduct, invoices } = useData();
-  const { stockMovements, getProductStockSummary, calculateCurrentStock } = useStock(); // ✅ correction ici
+  const { products, deleteProduct, invoices, stockMovements } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [adjustingStock, setAdjustingStock] = useState<string | null>(null);
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
 
+  // Calculer le stock restant selon la formule : Stock Initial + Rectifications - Ventes
+  const calculateCurrentStock = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return 0;
+
+    // Stock initial
+    const initialStock = product.initialStock || 0;
+
+    // Total des rectifications (ajustements)
+    const adjustments = stockMovements
+      .filter(m => m.productId === productId && m.type === 'adjustment')
+      .reduce((sum, m) => sum + m.quantity, 0);
+
+    // Total des ventes (quantités vendues dans les factures)
+    const sales = invoices.reduce((sum, invoice) => {
+      return sum + invoice.items
+        .filter(item => item.description === product.name)
+        .reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+
+    return initialStock + adjustments - sales;
+  };
+
+  // Obtenir le résumé du stock d'un produit
+  const getProductStockSummary = (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return null;
+
+    const productMovements = stockMovements.filter(m => m.productId === productId);
+    
+    // Total des ajustements
+    const totalAdjustments = productMovements
+      .filter(m => m.type === 'adjustment')
+      .reduce((sum, m) => sum + m.quantity, 0);
+
+    // Total des ventes
+    const totalSales = invoices.reduce((sum, invoice) => {
+      return sum + invoice.items
+        .filter(item => item.description === product.name)
+        .reduce((itemSum, item) => itemSum + item.quantity, 0);
+    }, 0);
+
+    const currentStock = calculateCurrentStock(productId);
+    const lastMovement = productMovements.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )[0];
+
+    return {
+      initialStock: product.initialStock || 0,
+      totalSales,
+      totalAdjustments,
+      currentStock,
+      lastMovementDate: lastMovement?.date || product.createdAt
+    };
+  };
   const getProductStats = (productId: string) => {
     const product = products.find(p => p.id === productId);
     if (!product) return { remainingStock: 0, ordersCount: 0, totalOrdered: 0 };
 
-    // Calculer le stock restant : stock initial - quantité vendue + rectifications
+    // Calculer selon la nouvelle formule
+    const remainingStock = calculateCurrentStock(productId);
+    
     let totalOrdered = 0;
     let ordersCount = 0;
     const ordersSet = new Set();
 
-    // Calculer les ventes
     invoices.forEach(invoice => {
       let hasProduct = false;
       invoice.items.forEach(item => {
@@ -46,13 +100,6 @@ export default function ProductsList() {
 
     ordersCount = ordersSet.size;
 
-    // Calculer les rectifications de stock
-    const summary = getProductStockSummary(productId);
-    const totalAdjustments = summary ? summary.totalAdjustments : 0;
-
-    // Stock restant = stock initial - quantité vendue + rectifications
-    const remainingStock = product.initialStock - totalOrdered + totalAdjustments;
-
     return { remainingStock, ordersCount, totalOrdered };
   };
 
@@ -65,7 +112,7 @@ export default function ProductsList() {
         </span>
       );
     }
-    if (stats.remainingStock <= (product.minStock || 0)) {
+    if (stats.remainingStock <= product.minStock) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
           Stock Faible
@@ -148,7 +195,7 @@ export default function ProductsList() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stockMovements.filter(m => m.type === 'adjustment').length}
+                {stockMovements?.filter(m => m.type === 'adjustment').length || 0}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Rectifications</p>
             </div>
@@ -162,7 +209,7 @@ export default function ProductsList() {
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                {stockMovements.filter(m => m.type === 'sale').length}
+                {invoices.length}
               </p>
               <p className="text-sm text-gray-600 dark:text-gray-400">Ventes</p>
             </div>
@@ -243,11 +290,11 @@ export default function ProductsList() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <span className={`text-sm font-medium ${
-                        stats.remainingStock <= (product.minStock || 0) ? 'text-red-600' : 'text-gray-900 dark:text-white'
+                        stats.remainingStock <= product.minStock ? 'text-red-600' : 'text-gray-900 dark:text-white'
                       }`}>
                         {stats.remainingStock.toFixed(3)} {product.unit || 'unité'}
                       </span>
-                      {stats.remainingStock <= (product.minStock || 0) && (
+                      {stats.remainingStock <= product.minStock && (
                         <AlertTriangle className="w-4 h-4 text-red-500" />
                       )}
                     </div>
