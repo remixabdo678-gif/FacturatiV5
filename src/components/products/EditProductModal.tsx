@@ -31,6 +31,7 @@ export default function EditProductModal({ isOpen, onClose, product }: EditProdu
     'Mobilier',
     'Consommables',
     'Services',
+     'Services',
     'Autre'
   ];
 
