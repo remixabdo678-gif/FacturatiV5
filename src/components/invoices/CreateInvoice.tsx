@@ -42,11 +42,11 @@ export default function CreateInvoice() {
   ]);
 
   const templates = [
-    { id: 'template1', name: 'Classique', isPro: false },
-    { id: 'template2', name: 'Moderne Coloré', isPro: true },
-    { id: 'template3', name: 'Minimaliste', isPro: true },
-    { id: 'template4', name: 'Corporate', isPro: true },
-    { id: 'template5', name: 'Premium Élégant', isPro: true }
+    { id: 'template1', name: 'Classic Free', isPro: false },
+    { id: 'template2', name: 'Noir Classique Pro', isPro: true },
+    { id: 'template3', name: 'Moderne avec formes vertes Pro', isPro: true },
+    { id: 'template4', name: 'Bleu Élégant Pro', isPro: true },
+    { id: 'template5', name: 'Minimal Bleu Pro', isPro: true }
   ];
 
   const getTemplateName = (templateId: string) => {

@@ -41,11 +41,11 @@ export default function InvoicesList() {
 
   const getTemplateName = (templateId: string = 'template1') => {
     const templates = {
-      'template1': 'Classique',
-      'template2': 'Moderne Coloré',
-      'template3': 'Minimaliste',
-      'template4': 'Corporate',
-      'template5': 'Premium Élégant'
+      'template1': 'Classic Free',
+      'template2': 'Noir Classique Pro',
+      'template3': 'Moderne avec formes vertes Pro',
+      'template4': 'Bleu Élégant Pro',
+      'template5': 'Minimal Bleu Pro'
     };
     return templates[templateId as keyof typeof templates] || 'Template';
   };

@@ -115,11 +115,11 @@ export default function InvoiceViewer({ invoice, onClose, onEdit, onDownload, on
                 onChange={(e) => setSelectedTemplate(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-transparent"
               >
-                <option value="template1">Classique</option>
-                <option value="template2">Moderne</option>
-                <option value="template3">Minimaliste</option>
-                <option value="template4">Corporate</option>
-                <option value="template5">Premium</option>
+                <option value="template1">Classic Free</option>
+                <option value="template2">Noir Classique Pro</option>
+                <option value="template3">Moderne avec formes vertes Pro</option>
+                <option value="template4">Bleu Élégant Pro</option>
+                <option value="template5">Minimal Bleu Pro</option>
               </select>
            
               {/* PDF */}

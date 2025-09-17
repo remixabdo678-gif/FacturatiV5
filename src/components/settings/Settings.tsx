@@ -479,6 +479,7 @@ export default function Settings() {
                   selectedTemplate={defaultTemplate}
                   onTemplateSelect={setDefaultTemplate}
                   disabled={!user?.isAdmin}
+                  showPreviewButton={true}
                 />
               </div>
               

@@ -253,13 +253,6 @@ export default function CreateQuote() {
           </div>
 
           {/* Template Selection */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <TemplateSelector 
-              selectedTemplate={selectedTemplate}
-              onTemplateSelect={setSelectedTemplate}
-              allowProSelection={true}
-            />
-          </div>
 
           {/* Quote Info */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
