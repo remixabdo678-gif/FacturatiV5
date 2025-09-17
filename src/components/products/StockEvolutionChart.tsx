@@ -1,374 +1,222 @@
-import React, { useState } from 'react';
-import { useData } from '../../contexts/DataContext';
-import { useAuth } from '../../contexts/AuthContext';
+import React from 'react';
 import { motion } from 'framer-motion';
+import { useStock } from '../../contexts/StockContext';
 import { Product } from '../../contexts/DataContext';
-import Modal from '../common/Modal';
-import { Package, Plus, Minus, RotateCcw, AlertTriangle, Clock } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Package, Calendar, Clock, Activity } from 'lucide-react';
 
-interface StockAdjustmentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+interface StockEvolutionChartProps {
   product: Product;
-  currentStock: number;
 }
 
-export default function StockAdjustmentModal({ isOpen, onClose, product, currentStock }: StockAdjustmentModalProps) {
-  const { updateProduct, addStockMovement } = useData();
-  const { user } = useAuth();
-  const [adjustmentType, setAdjustmentType] = useState<'set' | 'add' | 'subtract'>('add');
-  const [quantity, setQuantity] = useState(0);
-  const [reason, setReason] = useState('');
-  const [adjustmentDateTime, setAdjustmentDateTime] = useState(() => {
-    const now = new Date();
-    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
-    return localDateTime.toISOString().slice(0, 16);
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export default function StockEvolutionChart({ product }: StockEvolutionChartProps) {
+  const { getProductStockHistory } = useStock();
+  
+  const history = getProductStockHistory(product.id);
+  
+  // Générer les données avec points de mouvement
+  const generateChartData = () => {
+    // Utiliser directement l'historique des mouvements pour créer la courbe
+    return history.slice(0, 30).reverse().map((movement, index) => ({
+      date: new Date(movement.dateTime).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+      dateTime: movement.dateTime,
+      stock: movement.newStock,
+      type: movement.type,
+      quantity: movement.quantity,
+      reason: movement.reason,
+      userName: movement.userName,
+      isRecent: index >= history.length - 5
+    }));
+  };
 
-  const predefinedReasons = [
-    'Erreur de saisie',
-    'Perte/Casse',
-    'Vol/Disparition',
-    'Retour client',
-    'Inventaire physique',
-    'Réception marchandise',
-    'Correction administrative',
-    'Autre'
-  ];
+  const chartData = generateChartData();
+  const maxStock = Math.max(...chartData.map(d => d.stock), product.minStock, 1);
+  const minStock = Math.min(...chartData.map(d => d.stock), 0);
+  const currentStock = chartData[chartData.length - 1]?.stock || 0;
+  const previousStock = chartData[chartData.length - 2]?.stock || 0;
+  const trend = currentStock - previousStock;
 
-  const calculateNewStock = () => {
-    switch (adjustmentType) {
-      case 'set':
-        return quantity;
-      case 'add':
-        return currentStock + quantity;
-      case 'subtract':
-        return Math.max(0, currentStock - quantity);
+  const getMovementColor = (type: string) => {
+    switch (type) {
+      case 'sale':
+        return 'bg-red-500';
+      case 'adjustment':
+        return 'bg-purple-500';
+      case 'initial':
+        return 'bg-blue-500';
+      case 'return':
+        return 'bg-green-500';
       default:
-        return currentStock;
+        return 'bg-gray-500';
     }
   };
-
-  const calculateAdjustmentQuantity = () => {
-    const newStock = calculateNewStock();
-    return newStock - currentStock;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!reason.trim()) {
-      alert('Veuillez saisir un motif de rectification');
-      return;
-    }
-
-    if (adjustmentType === 'set' && quantity < 0) {
-      alert('Le stock ne peut pas être négatif');
-      return;
-    }
-
-    if (adjustmentType === 'subtract' && quantity > currentStock) {
-      alert('Impossible de retirer plus que le stock actuel');
-      return;
-    }
-
-    if (!user) {
-      alert('Utilisateur non connecté');
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const adjustmentQuantity = calculateAdjustmentQuantity();
-      const newStock = calculateNewStock();
-
-      // Ajouter le mouvement de stock
-      await addStockMovement({
-        productId: product.id,
-        productName: product.name,
-        type: 'adjustment',
-        quantity: adjustmentQuantity,
-        previousStock: currentStock,
-        newStock: newStock,
-        reason: reason.trim(),
-        userId: user.id,
-        userName: user.name,
-        date: adjustmentDateTime,
-        adjustmentDateTime: adjustmentDateTime
-      });
-
-      // Mettre à jour le stock du produit
-      await updateProduct(product.id, { stock: newStock });
-
-      // Reset form
-      setQuantity(0);
-      setReason('');
-      setAdjustmentType('add');
-
-      onClose();
-    } catch (error) {
-      console.error('Erreur lors de la rectification:', error);
-      alert('Erreur lors de la rectification du stock');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const newStock = calculateNewStock();
-  const adjustmentQuantity = calculateAdjustmentQuantity();
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Rectifier le Stock" size="md">
-      <motion.form
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        onSubmit={handleSubmit}
-        className="space-y-6"
-      >
-        {/* Informations produit */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-          className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4"
-        >
-          <div className="flex items-center space-x-3 mb-3">
-            <Package className="w-6 h-6 text-blue-600" />
-            <div>
-              <h4 className="font-semibold text-blue-900 dark:text-blue-100">{product.name}</h4>
-              <p className="text-sm text-blue-700 dark:text-blue-300">{product.category}</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="font-medium text-blue-800 dark:text-blue-200">Stock actuel:</span>
-              <span className="ml-2 font-bold text-blue-900 dark:text-blue-100">
-                {currentStock.toFixed(3)} {product.unit}
-              </span>
-            </div>
-            <div>
-              <span className="font-medium text-blue-800 dark:text-blue-200">Stock minimum:</span>
-              <span className="ml-2 font-bold text-blue-900 dark:text-blue-100">
-                {product.minStock.toFixed(3)} {product.unit}
-              </span>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Date et heure de rectification */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            <Clock className="w-4 h-4 inline mr-2" />
-            Date et heure de rectification
-          </label>
-          <input
-            type="datetime-local"
-            value={adjustmentDateTime}
-            onChange={(e) => setAdjustmentDateTime(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          />
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Cette date/heure sera enregistrée dans l'historique du produit
-          </p>
-        </motion.div>
-
-        {/* Type d'ajustement */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-        >
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            Type de rectification
-          </label>
-          <div className="grid grid-cols-3 gap-3">
-            {/* Ajouter */}
-            <motion.label
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <input
-                type="radio"
-                name="adjustmentType"
-                value="add"
-                checked={adjustmentType === 'add'}
-                onChange={(e) => setAdjustmentType(e.target.value as any)}
-                className="text-green-600 focus:ring-green-500"
-              />
-              <Plus className="w-4 h-4 text-green-600" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Ajouter</span>
-            </motion.label>
-
-            {/* Retirer */}
-            <motion.label
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <input
-                type="radio"
-                name="adjustmentType"
-                value="subtract"
-                checked={adjustmentType === 'subtract'}
-                onChange={(e) => setAdjustmentType(e.target.value as any)}
-                className="text-red-600 focus:ring-red-500"
-              />
-              <Minus className="w-4 h-4 text-red-600" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Retirer</span>
-            </motion.label>
-
-            {/* Définir */}
-            <motion.label
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <input
-                type="radio"
-                name="adjustmentType"
-                value="set"
-                checked={adjustmentType === 'set'}
-                onChange={(e) => setAdjustmentType(e.target.value as any)}
-                className="text-blue-600 focus:ring-blue-500"
-              />
-              <RotateCcw className="w-4 h-4 text-blue-600" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Définir</span>
-            </motion.label>
-          </div>
-        </motion.div>
-
-        {/* Quantité */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            {adjustmentType === 'set' ? 'Nouveau stock' : 'Quantité'} ({product.unit})
-          </label>
-          <input
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(parseFloat(e.target.value) || 0)}
-            min="0"
-            step="0.001"
-            required
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-            placeholder={adjustmentType === 'set' ? 'Stock final souhaité' : 'Quantité à ajuster'}
-          />
-        </div>
-
-        {/* Motif */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Motif de rectification *
-          </label>
-          <select
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            required
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 mb-2"
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <motion.div
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           >
-            <option value="">Sélectionner un motif</option>
-            {predefinedReasons.map(predefinedReason => (
-              <option key={predefinedReason} value={predefinedReason}>
-                {predefinedReason}
-              </option>
-            ))}
-          </select>
+            <Activity className="w-6 h-6 text-purple-600" />
+          </motion.div>
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Évolution du Stock - {product.name}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Derniers mouvements avec date/heure</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          {trend > 0 ? (
+            <TrendingUp className="w-5 h-5 text-green-500" />
+          ) : trend < 0 ? (
+            <TrendingDown className="w-5 h-5 text-red-500" />
+          ) : (
+            <Package className="w-5 h-5 text-gray-500" />
+          )}
+          <span className={`text-sm font-medium ${
+            trend > 0 ? 'text-green-600' : trend < 0 ? 'text-red-600' : 'text-gray-600'
+          }`}>
+            {trend > 0 ? '+' : ''}{trend.toFixed(1)} {product.unit}
+          </span>
+        </div>
+      </div>
 
-          {reason === 'Autre' && (
-            <input
-              type="text"
-              placeholder="Précisez le motif..."
-              onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+      {/* Statistiques rapides */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="grid grid-cols-4 gap-4 mb-6"
+      >
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700"
+        >
+          <div className="text-lg font-bold text-blue-600">{currentStock.toFixed(1)}</div>
+          <div className="text-xs text-blue-700 dark:text-blue-300">Stock actuel</div>
+        </motion.div>
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-700"
+        >
+          <div className="text-lg font-bold text-green-600">{maxStock.toFixed(1)}</div>
+          <div className="text-xs text-green-700 dark:text-green-300">Maximum</div>
+        </motion.div>
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-700"
+        >
+          <div className="text-lg font-bold text-red-600">{minStock.toFixed(1)}</div>
+          <div className="text-xs text-red-700 dark:text-red-300">Minimum</div>
+        </motion.div>
+        <motion.div 
+          whileHover={{ scale: 1.02 }}
+          className="text-center p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700"
+        >
+          <div className="text-lg font-bold text-purple-600">{history.length}</div>
+          <div className="text-xs text-purple-700 dark:text-purple-300">Mouvements</div>
+        </motion.div>
+      </motion.div>
+
+      {/* Graphique */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+        className="h-40 relative bg-gray-50 dark:bg-gray-700 rounded-lg p-4 overflow-hidden"
+      >
+        {/* Ligne de seuil minimum */}
+        <div 
+          className="absolute left-4 right-4 border-t-2 border-dashed border-red-400 z-10"
+          style={{ bottom: `${20 + (product.minStock / maxStock) * 60}%` }}
+        >
+          <span className="absolute -top-6 right-0 text-xs text-red-600 bg-white dark:bg-gray-800 px-2 py-1 rounded">
+            Seuil min: {product.minStock.toFixed(1)} {product.unit}
+          </span>
+        </div>
+        
+        {/* Courbe de stock */}
+        <svg className="absolute inset-4 w-full h-full" style={{ width: 'calc(100% - 32px)', height: 'calc(100% - 32px)' }}>
+          {chartData.length > 1 && (
+            <motion.path
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 2, ease: "easeInOut" }}
+              d={chartData.map((point, index) => {
+                const x = (index / (chartData.length - 1)) * 100;
+                const y = 100 - (maxStock > 0 ? (point.stock / maxStock) * 80 : 0);
+                return `${index === 0 ? 'M' : 'L'} ${x}% ${y}%`;
+              }).join(' ')}
+              stroke="#8B5CF6"
+              strokeWidth="2"
+              fill="none"
+              className="drop-shadow-sm"
             />
           )}
+          
+          {/* Points de mouvement */}
+          {chartData.map((point, index) => {
+            const x = (index / (chartData.length - 1)) * 100;
+            const y = 100 - (maxStock > 0 ? (point.stock / maxStock) * 80 : 0);
+            
+            return (
+              <motion.circle
+                key={index}
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                cx={`${x}%`}
+                cy={`${y}%`}
+                r="4"
+                className={`${getMovementColor(point.type)} cursor-pointer hover:scale-125 transition-transform`}
+                title={`${new Date(point.dateTime).toLocaleDateString('fr-FR')} ${new Date(point.dateTime).toLocaleTimeString('fr-FR')}: ${point.reason} - ${point.quantity > 0 ? '+' : ''}${point.quantity.toFixed(3)} ${product.unit}`}
+              />
+            );
+          })}
+        </svg>
+        
+        {/* Axes et labels */}
+        <div className="absolute bottom-2 left-4 right-4 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+          {chartData.length > 0 && (
+            <>
+              <span>{new Date(chartData[0].dateTime).toLocaleDateString('fr-FR')}</span>
+              <span>{new Date(chartData[chartData.length - 1].dateTime).toLocaleDateString('fr-FR')}</span>
+            </>
+          )}
         </div>
+      </motion.div>
 
-        {/* Aperçu du changement */}
-        {quantity > 0 && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            className={`p-4 rounded-lg border-2 ${
-              adjustmentQuantity > 0
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600'
-                : adjustmentQuantity < 0
-                ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-600'
-                : 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600'
-            }`}
-          >
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Aperçu de la rectification</h4>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Stock actuel:</span>
-                <div className="font-bold text-gray-900 dark:text-gray-100">
-                  {currentStock.toFixed(3)} {product.unit}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Ajustement:</span>
-                <div
-                  className={`font-bold ${
-                    adjustmentQuantity > 0
-                      ? 'text-green-600'
-                      : adjustmentQuantity < 0
-                      ? 'text-red-600'
-                      : 'text-gray-600'
-                  }`}
-                >
-                  {adjustmentQuantity > 0 ? '+' : ''}
-                  {adjustmentQuantity.toFixed(3)} {product.unit}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Nouveau stock:</span>
-                <div className="font-bold text-blue-600">
-                  {newStock.toFixed(3)} {product.unit}
-                </div>
-              </div>
-            </div>
-
-            {newStock <= product.minStock && (
-              <div className="mt-3 flex items-center space-x-2 text-orange-600">
-                <AlertTriangle className="w-4 h-4" />
-                <span className="text-sm font-medium">
-                  Attention: Le nouveau stock sera en dessous du seuil minimum
-                </span>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* Boutons */}
-        <div className="flex justify-end space-x-3 pt-6">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          >
-            Annuler
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={isSubmitting || quantity <= 0 || !reason.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Rectification...' : 'Rectifier le Stock'}
-          </motion.button>
+      {/* Légende améliorée */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3"
+      >
+        <div className="flex items-center space-x-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <span className="text-xs text-blue-700 dark:text-blue-300">Stock Initial</span>
         </div>
-      </motion.form>
-    </Modal>
+        <div className="flex items-center space-x-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+          <span className="text-xs text-red-700 dark:text-red-300">Vente</span>
+        </div>
+        <div className="flex items-center space-x-2 p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+          <span className="text-xs text-purple-700 dark:text-purple-300">Rectification</span>
+        </div>
+        <div className="flex items-center space-x-2 p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+          <div className="w-3 h-3 bg-red-400 rounded border-dashed border-2 border-red-600"></div>
+          <span className="text-xs text-orange-700 dark:text-orange-300">Seuil minimum</span>
+        </div>
+      </div>
+    </motion.div>
   );
 }
