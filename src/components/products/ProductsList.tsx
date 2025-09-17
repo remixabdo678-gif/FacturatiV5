@@ -282,7 +282,7 @@ export default function ProductsList() {
                     {lastAdjustment ? (
                       <div className="text-sm">
                         <span className={`font-medium ${lastAdjustment.quantity >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {lastAdjustment.quantity > 0 ? '+' : ''}{lastAdjustment.quantity.toFixed(1)}
+                          {lastAdjustment.quantity > 0 ? '+' : ''}{lastAdjustment.quantity.toFixed(3)}
                         </span>
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           le {new Date(lastAdjustment.date).toLocaleDateString('fr-FR')}
