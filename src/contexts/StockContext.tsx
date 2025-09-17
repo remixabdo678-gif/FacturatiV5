@@ -156,6 +156,11 @@ export function StockProvider({ children }: { children: ReactNode }) {
         userName: user.name,
         date: new Date().toISOString().split('T')[0]
       });
+      
+      // Mettre à jour le stock du produit dans la base de données
+      const { updateProduct } = await import('./DataContext');
+      // Note: Cette approche nécessite une refactorisation pour éviter les imports circulaires
+      // Pour l'instant, on va gérer cela différemment
     } catch (error) {
       console.error('Erreur lors de l\'ajustement du stock:', error);
       throw error;

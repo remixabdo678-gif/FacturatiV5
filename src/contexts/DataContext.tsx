@@ -557,6 +557,7 @@ const stockContext = useStock();
       const docRef = await addDoc(collection(db, 'products'), {
         ...productData,
         sku,
+        stock: productData.initialStock, // Le stock actuel commence par être égal au stock initial
         entrepriseId: user.isAdmin ? user.id : user.entrepriseId,
         createdAt: new Date().toISOString()
       });

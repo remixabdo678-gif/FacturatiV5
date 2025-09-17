@@ -14,7 +14,11 @@ export default function StockAlertsWidget() {
     // Générer les alertes de stock
     const newAlerts = products
       .map(product => {
-        const currentStock = calculateCurrentStock(product.id);
+        // Calculer le stock restant : stock initial - quantité vendue + rectifications
+        const summary = getProductStockSummary(product.id);
+        const totalAdjustments = summary ? summary.totalAdjustments : 0;
+        const totalSales = summary ? summary.totalSales : 0;
+        const currentStock = (product.initialStock || 0) - totalSales + totalAdjustments;
         
         if (currentStock <= 0) {
           return {
@@ -23,18 +27,18 @@ export default function StockAlertsWidget() {
             productName: product.name,
             type: 'out_of_stock',
             currentStock,
-            minStock: product.minStock,
+            minStock: product.minStock || 0,
             unit: product.unit,
             severity: 'critical'
           };
-        } else if (currentStock <= product.minStock) {
+        } else if (currentStock <= (product.minStock || 0)) {
           return {
             id: `low-${product.id}`,
             productId: product.id,
             productName: product.name,
             type: 'low_stock',
             currentStock,
-            minStock: product.minStock,
+            minStock: product.minStock || 0,
             unit: product.unit,
             severity: 'warning'
           };

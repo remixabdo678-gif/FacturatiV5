@@ -25,15 +25,12 @@ export default function ProductsList() {
     const product = products.find(p => p.id === productId);
     if (!product) return { remainingStock: 0, ordersCount: 0, totalOrdered: 0 };
 
-    // Utiliser le stock calculé depuis le contexte Stock
-    const currentStock = calculateCurrentStock(productId);
-    const remainingStock = currentStock;
-
-    // Calculate total ordered quantity from all invoices (pour compatibilité)
+    // Calculer le stock restant : stock initial - quantité vendue + rectifications
     let totalOrdered = 0;
     let ordersCount = 0;
     const ordersSet = new Set();
 
+    // Calculer les ventes
     invoices.forEach(invoice => {
       let hasProduct = false;
       invoice.items.forEach(item => {
@@ -49,6 +46,13 @@ export default function ProductsList() {
 
     ordersCount = ordersSet.size;
 
+    // Calculer les rectifications de stock
+    const summary = getProductStockSummary(productId);
+    const totalAdjustments = summary ? summary.totalAdjustments : 0;
+
+    // Stock restant = stock initial - quantité vendue + rectifications
+    const remainingStock = product.initialStock - totalOrdered + totalAdjustments;
+
     return { remainingStock, ordersCount, totalOrdered };
   };
 
@@ -61,7 +65,7 @@ export default function ProductsList() {
         </span>
       );
     }
-    if (stats.remainingStock <= product.minStock) {
+    if (stats.remainingStock <= (product.minStock || 0)) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
           Stock Faible
@@ -222,10 +226,10 @@ export default function ProductsList() {
                  
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900 dark:text-white">
-                      {product.stock.toFixed(3)} {product.unit || 'unité'}
+                      {(product.initialStock || 0).toFixed(3)} {product.unit || 'unité'}
                     </div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Min: {product.minStock.toFixed(3)} {product.unit || 'unité'}
+                      Min: {(product.minStock || 0).toFixed(3)} {product.unit || 'unité'}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -239,11 +243,11 @@ export default function ProductsList() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center space-x-2">
                       <span className={`text-sm font-medium ${
-                        stats.remainingStock <= product.minStock ? 'text-red-600' : 'text-gray-900 dark:text-white'
+                        stats.remainingStock <= (product.minStock || 0) ? 'text-red-600' : 'text-gray-900 dark:text-white'
                       }`}>
                         {stats.remainingStock.toFixed(3)} {product.unit || 'unité'}
                       </span>
-                      {stats.remainingStock <= product.minStock && (
+                      {stats.remainingStock <= (product.minStock || 0) && (
                         <AlertTriangle className="w-4 h-4 text-red-500" />
                       )}
                     </div>

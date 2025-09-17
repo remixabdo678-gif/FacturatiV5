@@ -82,7 +82,7 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
         currentStock
       );
 
-      // Mettre à jour le stock du produit
+      // Mettre à jour le stock du produit directement
       await updateProduct(product.id, { stock: newStock });
       
       // Reset form
