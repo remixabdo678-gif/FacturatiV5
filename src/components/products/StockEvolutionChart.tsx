@@ -63,7 +63,7 @@ export default function StockEvolutionChart({ product }: StockEvolutionChartProp
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           >
             <Activity className="w-6 h-6 text-purple-600" />
-          </motion.div>
+          </div>
           <div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Évolution du Stock - {product.name}
