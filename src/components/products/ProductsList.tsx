@@ -247,56 +247,62 @@ const formatQuantity = (value: number, unit?: string) => {
                 
                 return (
                 <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap">
-  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-medium text-gray-900 dark:text-white">{product.name}</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{product.category}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="text-gray-900 dark:text-white">{product.purchasePrice.toLocaleString()} MAD</span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    {product.salePrice.toLocaleString()} MAD
+                  </td>
+                 
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
     {formatQuantity(product.initialStock || 0, product.unit)} {product.unit || 'unité'}
-  </div>
-  <div className="text-xs text-gray-500 dark:text-gray-400">
-    Min: {formatQuantity(product.minStock || 0, product.unit)} {product.unit || 'unité'}
-  </div>
-</td>
-
-<td className="px-6 py-4 whitespace-nowrap">
-  <div className="text-sm font-medium text-gray-900 dark:text-white">
-    {stats.ordersCount} commande{stats.ordersCount > 1 ? 's' : ''}
-  </div>
-  <div className="text-xs text-gray-500 dark:text-gray-400">
-    {formatQuantity(stats.totalOrdered, product.unit)} {product.unit || 'unité'} commandé{stats.totalOrdered > 1 ? 's' : ''}
-  </div>
-</td>
-
-<td className="px-6 py-4 whitespace-nowrap">
-  <div className="flex items-center space-x-2">
-    <span className={`text-sm font-medium ${
-      stats.remainingStock <= product.minStock ? 'text-red-600' : 'text-gray-900 dark:text-white'
-    }`}>
-      {formatQuantity(stats.remainingStock, product.unit)} {product.unit || 'unité'}
-    </span>
-    {stats.remainingStock <= product.minStock && (
-      <AlertTriangle className="w-4 h-4 text-red-500" />
-    )}
-  </div>
-  {stats.remainingStock <= 0 && (
-    <div className="text-xs text-red-600 dark:text-red-400 font-medium">Rupture de stock</div>
-  )}
-</td>
-
-<td className="px-6 py-4 whitespace-nowrap">
-  {lastAdjustment ? (
-    <div className="text-sm">
-      <span className={`font-medium ${lastAdjustment.quantity >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-        {lastAdjustment.quantity > 0 ? '+' : ''}
-        {formatQuantity(lastAdjustment.quantity, product.unit)} {product.unit || 'unité'}
-      </span>
-      <div className="text-xs text-gray-500 dark:text-gray-400">
-        le {new Date(lastAdjustment.date).toLocaleDateString('fr-FR')}
-      </div>
-    </div>
-  ) : (
-    <span className="text-xs text-gray-400 dark:text-gray-500">Aucune rectif</span>
-  )}
-</td>
-
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      Min: {(product.minStock || 0).toFixed(3)} {product.unit || 'unité'}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      {stats.ordersCount} commande{stats.ordersCount > 1 ? 's' : ''}
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {stats.totalOrdered.toFixed(3)} {product.unit || 'unité'} commandé{stats.totalOrdered > 1 ? 's' : ''}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center space-x-2">
+                      <span className={`text-sm font-medium ${
+                        stats.remainingStock <= product.minStock ? 'text-red-600' : 'text-gray-900 dark:text-white'
+                      }`}>
+                        {stats.remainingStock.toFixed(3)} {product.unit || 'unité'}
+                      </span>
+                      {stats.remainingStock <= product.minStock && (
+                        <AlertTriangle className="w-4 h-4 text-red-500" />
+                      )}
+                    </div>
+                    {stats.remainingStock <= 0 && (
+                      <div className="text-xs text-red-600 dark:text-red-400 font-medium">Rupture de stock</div>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {lastAdjustment ? (
+                      <div className="text-sm">
+                        <span className={`font-medium ${lastAdjustment.quantity >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {lastAdjustment.quantity > 0 ? '+' : ''}{lastAdjustment.quantity.toFixed(3)}  {product.unit || 'unité'}
+                        </span>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          le {new Date(lastAdjustment.date).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400 dark:text-gray-500">Aucune rectif</span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getStatusBadge(product)}
                   </td>
