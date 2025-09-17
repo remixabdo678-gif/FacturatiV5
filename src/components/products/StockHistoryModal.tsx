@@ -267,11 +267,6 @@ export default function StockHistoryModal({ isOpen, onClose, product }: StockHis
 
        
 
-       
-        {/* Liste des mouvements */}
-          product={product} 
-          movements={filteredHistory}
-        />
 
         <div className="max-h-96 overflow-y-auto">
           <div className="space-y-3">
