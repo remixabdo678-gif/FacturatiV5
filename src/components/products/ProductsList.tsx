@@ -202,12 +202,7 @@ export default function ProductsList() {
           </div>
         </div>
         
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex items-center space-x-3">
-           
-           
-          </div>
-        </div>
+      
       </div>
 
       {/* Products Table */}
