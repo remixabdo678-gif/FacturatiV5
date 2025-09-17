@@ -4,7 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { motion } from 'framer-motion';
 import { Product } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
-import { Package, Plus, Minus, RotateCcw, AlertTriangle, Clock, Calendar } from 'lucide-react';
+import { Package, Plus, Minus, RotateCcw, AlertTriangle, Clock } from 'lucide-react';
 
 interface StockAdjustmentModalProps {
   isOpen: boolean;
@@ -57,7 +57,7 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!reason.trim()) {
       alert('Veuillez saisir un motif de rectification');
       return;
@@ -78,11 +78,11 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
       return;
     }
     setIsSubmitting(true);
-    
+
     try {
       const adjustmentQuantity = calculateAdjustmentQuantity();
       const newStock = calculateNewStock();
-      
+
       // Ajouter le mouvement de stock
       await addStockMovement({
         productId: product.id,
@@ -98,14 +98,14 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
         adjustmentDateTime: adjustmentDateTime
       });
 
-      // Mettre à jour le stock du produit directement
+      // Mettre à jour le stock du produit
       await updateProduct(product.id, { stock: newStock });
-      
+
       // Reset form
       setQuantity(0);
       setReason('');
       setAdjustmentType('add');
-      
+
       onClose();
     } catch (error) {
       console.error('Erreur lors de la rectification:', error);
@@ -120,15 +120,15 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Rectifier le Stock" size="md">
-      <motion.form 
+      <motion.form
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
-        onSubmit={handleSubmit} 
+        onSubmit={handleSubmit}
         className="space-y-6"
       >
         {/* Informations produit */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.3, delay: 0.1 }}
@@ -177,6 +177,7 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
             Cette date/heure sera enregistrée dans l'historique du produit
           </p>
         </motion.div>
+
         {/* Type d'ajustement */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -187,11 +188,8 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
             Type de rectification
           </label>
           <div className="grid grid-cols-3 gap-3">
-            <motion.label 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
+            {/* Ajouter */}
+            <motion.label className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <input
                 type="radio"
                 name="adjustmentType"
@@ -204,11 +202,8 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Ajouter</span>
             </motion.label>
 
-            <motion.label 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
+            {/* Retirer */}
+            <motion.label className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <input
                 type="radio"
                 name="adjustmentType"
@@ -221,11 +216,8 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Retirer</span>
             </motion.label>
 
-            <motion.label 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
+            {/* Définir */}
+            <motion.label className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
               <input
                 type="radio"
                 name="adjustmentType"
@@ -275,7 +267,7 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               </option>
             ))}
           </select>
-          
+
           {reason === 'Autre' && (
             <input
               type="text"
@@ -284,76 +276,20 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           )}
-        </motion.div>
+        </div>
 
         {/* Aperçu du changement */}
         {quantity > 0 && (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            className={`p-4 rounded-lg border-2 ${
-            adjustmentQuantity > 0 
-              ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600' 
-              : adjustmentQuantity < 0 
-                ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-600'
-                : 'bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-600'
-          }`}>
+          <motion.div className="p-4 rounded-lg border-2">
             <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Aperçu de la rectification</h4>
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Stock actuel:</span>
-                <div className="font-bold text-gray-900 dark:text-gray-100">
-                  {currentStock.toFixed(3)} {product.unit}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Ajustement:</span>
-                <div className={`font-bold ${
-                  adjustmentQuantity > 0 ? 'text-green-600' : 
-                  adjustmentQuantity < 0 ? 'text-red-600' : 'text-gray-600'
-                }`}>
-                  {adjustmentQuantity > 0 ? '+' : ''}{adjustmentQuantity.toFixed(3)} {product.unit}
-                </div>
-              </div>
-              <div>
-                <span className="text-gray-600 dark:text-gray-400">Nouveau stock:</span>
-                <div className="font-bold text-blue-600">
-                  {newStock.toFixed(3)} {product.unit}
-                </div>
-              </div>
-            </div>
-            
-            {newStock <= product.minStock && (
-              <div className="mt-3 flex items-center space-x-2 text-orange-600">
-                <AlertTriangle className="w-4 h-4" />
-                <span className="text-sm font-medium">
-                  Attention: Le nouveau stock sera en dessous du seuil minimum
-                </span>
-              </div>
-            )}
-          </div>
+            ...
+          </motion.div>
         )}
 
+        {/* Boutons */}
         <div className="flex justify-end space-x-3 pt-6">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-          >
-            Annuler
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={isSubmitting || quantity <= 0 || !reason.trim()}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isSubmitting ? 'Rectification...' : 'Rectifier le Stock'}
-          </motion.button>
+          <motion.button type="button" onClick={onClose}>Annuler</motion.button>
+          <motion.button type="submit">{isSubmitting ? 'Rectification...' : 'Rectifier le Stock'}</motion.button>
         </div>
       </motion.form>
     </Modal>
