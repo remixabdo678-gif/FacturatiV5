@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
-import { AlertTriangle, Package, X, Bell, TrendingDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AlertTriangle, Package, X, Bell, TrendingDown } from 'lucide-react';
 
 export default function StockAlertsWidget() {
   const { products, invoices, stockMovements } = useData();
@@ -103,13 +103,27 @@ export default function StockAlertsWidget() {
   if (alerts.length === 0) return null;
 
   return (
-    <div className="mb-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="mb-6"
+    >
       <div className="flex items-center space-x-2 mb-4">
-        <Bell className="w-5 h-5 text-orange-600" />
+        <motion.div
+          animate={{ rotate: [0, 15, -15, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <Bell className="w-5 h-5 text-orange-600" />
+        </motion.div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Alertes de Stock</h3>
-        <span className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-medium px-2 py-1 rounded-full">
+        <motion.span 
+          animate={{ scale: [1, 1.1, 1] }}
+          transition={{ duration: 1, repeat: Infinity }}
+          className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-xs font-medium px-2 py-1 rounded-full"
+        >
           {alerts.length}
-        </span>
+        </motion.span>
       </div>
 
       <div className="space-y-3">
@@ -120,9 +134,11 @@ export default function StockAlertsWidget() {
             return (
               <motion.div
                 key={alert.id}
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+                initial={{ opacity: 0, x: -50, scale: 0.9 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 50, scale: 0.9 }}
+                whileHover={{ scale: 1.02, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)" }}
+                transition={{ duration: 0.3 }}
                 className={`${config.bg} ${config.border} border rounded-lg p-4 hover:shadow-md transition-all duration-200`}
               >
                 <div className="flex items-center justify-between">
@@ -146,19 +162,21 @@ export default function StockAlertsWidget() {
                     </div>
                   </div>
                   
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 90 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={() => dismissAlert(alert.id)}
                     className="p-2 hover:bg-white/50 dark:hover:bg-gray-700/50 rounded-lg transition-colors"
                     title="Masquer pendant 24h"
                   >
                     <X className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                  </button>
+                  </motion.button>
                 </div>
               </motion.div>
             );
           })}
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }

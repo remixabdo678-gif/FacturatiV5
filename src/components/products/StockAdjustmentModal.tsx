@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { motion } from 'framer-motion';
 import { Product } from '../../contexts/DataContext';
 import Modal from '../common/Modal';
-import { Package, Plus, Minus, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Package, Plus, Minus, RotateCcw, AlertTriangle, Clock, Calendar } from 'lucide-react';
 
 interface StockAdjustmentModalProps {
   isOpen: boolean;
@@ -18,6 +19,11 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
   const [adjustmentType, setAdjustmentType] = useState<'set' | 'add' | 'subtract'>('add');
   const [quantity, setQuantity] = useState(0);
   const [reason, setReason] = useState('');
+  const [adjustmentDateTime, setAdjustmentDateTime] = useState(() => {
+    const now = new Date();
+    const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+    return localDateTime.toISOString().slice(0, 16);
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const predefinedReasons = [
@@ -88,7 +94,8 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
         reason: reason.trim(),
         userId: user.id,
         userName: user.name,
-        date: new Date().toISOString().split('T')[0]
+        date: adjustmentDateTime,
+        adjustmentDateTime: adjustmentDateTime
       });
 
       // Mettre à jour le stock du produit directement
@@ -113,9 +120,20 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Rectifier le Stock" size="md">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <motion.form 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        onSubmit={handleSubmit} 
+        className="space-y-6"
+      >
         {/* Informations produit */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+          className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4"
+        >
           <div className="flex items-center space-x-3 mb-3">
             <Package className="w-6 h-6 text-blue-600" />
             <div>
@@ -137,15 +155,43 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               </span>
             </div>
           </div>
-        </div>
+        </motion.div>
 
+        {/* Date et heure de rectification */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.2 }}
+        >
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <Clock className="w-4 h-4 inline mr-2" />
+            Date et heure de rectification
+          </label>
+          <input
+            type="datetime-local"
+            value={adjustmentDateTime}
+            onChange={(e) => setAdjustmentDateTime(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          />
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Cette date/heure sera enregistrée dans l'historique du produit
+          </p>
+        </motion.div>
         {/* Type d'ajustement */}
-        <div>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.3 }}
+        >
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Type de rectification
           </label>
           <div className="grid grid-cols-3 gap-3">
-            <label className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <motion.label 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
               <input
                 type="radio"
                 name="adjustmentType"
@@ -156,9 +202,13 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               />
               <Plus className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Ajouter</span>
-            </label>
+            </motion.label>
 
-            <label className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <motion.label 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
               <input
                 type="radio"
                 name="adjustmentType"
@@ -169,9 +219,13 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               />
               <Minus className="w-4 h-4 text-red-600" />
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Retirer</span>
-            </label>
+            </motion.label>
 
-            <label className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <motion.label 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
               <input
                 type="radio"
                 name="adjustmentType"
@@ -182,9 +236,9 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               />
               <RotateCcw className="w-4 h-4 text-blue-600" />
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Définir</span>
-            </label>
+            </motion.label>
           </div>
-        </div>
+        </motion.div>
 
         {/* Quantité */}
         <div>
@@ -230,11 +284,15 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
             />
           )}
-        </div>
+        </motion.div>
 
         {/* Aperçu du changement */}
         {quantity > 0 && (
-          <div className={`p-4 rounded-lg border-2 ${
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className={`p-4 rounded-lg border-2 ${
             adjustmentQuantity > 0 
               ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-600' 
               : adjustmentQuantity < 0 
@@ -278,22 +336,26 @@ export default function StockAdjustmentModal({ isOpen, onClose, product, current
         )}
 
         <div className="flex justify-end space-x-3 pt-6">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="button"
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           >
             Annuler
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             type="submit"
             disabled={isSubmitting || quantity <= 0 || !reason.trim()}
             className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? 'Rectification...' : 'Rectifier le Stock'}
-          </button>
+          </motion.button>
         </div>
-      </form>
+      </motion.form>
     </Modal>
   );
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useData } from '../../contexts/DataContext';
+import { motion } from 'framer-motion';
 import { Package, TrendingUp, TrendingDown, AlertTriangle, BarChart3 } from 'lucide-react';
 
 export default function StockOverviewWidget() {
@@ -97,27 +98,54 @@ export default function StockOverviewWidget() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6"
+    >
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         
         return (
-          <div key={index} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200">
+          <motion.div 
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+            whileHover={{ 
+              scale: 1.02, 
+              y: -4,
+              boxShadow: "0 10px 25px rgba(0, 0, 0, 0.1)"
+            }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-all duration-200 cursor-pointer"
+          >
             <div className="flex items-center space-x-3">
-              <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center`}>
+              <motion.div 
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.5 }}
+                className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center`}
+              >
                 <Icon className="w-6 h-6 text-white" />
-              </div>
+              </motion.div>
               <div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stat.value}</p>
+                <motion.p 
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 + 0.2 }}
+                  className="text-2xl font-bold text-gray-900 dark:text-gray-100"
+                >
+                  {stat.value}
+                </motion.p>
                 <p className="text-sm text-gray-600 dark:text-gray-300">{stat.title}</p>
               </div>
             </div>
             <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
               {stat.subtitle}
             </div>
-          </div>
+          </motion.div>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

@@ -28,6 +28,7 @@ export interface StockMovement {
   userId: string;
   userName: string;
   date: string;
+  adjustmentDateTime?: string; // Date/heure précise pour les rectifications
   createdAt: string;
   entrepriseId: string;
 }

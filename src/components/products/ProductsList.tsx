@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import AddProductModal from './AddProductModal';
 import EditProductModal from './EditProductModal';
 import StockAdjustmentModal from './StockAdjustmentModal';
 import StockHistoryModal from './StockHistoryModal';
-import { Plus, Search, Edit, Trash2, AlertTriangle, Package, RotateCcw, History, TrendingUp, TrendingDown } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, AlertTriangle, Package, RotateCcw, History, TrendingUp, TrendingDown, Info, HelpCircle } from 'lucide-react';
 import StockOverviewWidget from './StockOverviewWidget';
 import StockAlertsWidget from './StockAlertsWidget';
+import ActionTooltip from './ActionTooltip';
 
 
 export default function ProductsList() {
@@ -18,6 +20,8 @@ export default function ProductsList() {
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [adjustingStock, setAdjustingStock] = useState<string | null>(null);
   const [viewingHistory, setViewingHistory] = useState<string | null>(null);
+  const [showActionsHelp, setShowActionsHelp] = useState(false);
+  const [hoveredAction, setHoveredAction] = useState<string | null>(null);
 
   // Calculer le stock restant selon la formule : Stock Initial + Rectifications - Ventes
   const calculateCurrentStock = (productId: string) => {
@@ -154,25 +158,50 @@ export default function ProductsList() {
 
   return (
     <>
-    <div className="space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="space-y-6"
+    >
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('products')}</h1>
-        <button 
+        <motion.button 
           onClick={() => setIsAddModalOpen(true)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           className="inline-flex items-center space-x-2 bg-gradient-to-r from-teal-600 to-blue-600 hover:from-teal-700 hover:to-blue-700 text-white px-4 py-2 rounded-lg transition-all duration-200"
         >
           <Plus className="w-4 h-4" />
           <span>Nouveau Produit</span>
-        </button>
+        </motion.button>
       </div>
 
       {/* Search and Stats */}
-      <StockOverviewWidget />
-      <StockAlertsWidget />
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        <StockOverviewWidget />
+      </motion.div>
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
+        <StockAlertsWidget />
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="lg:col-span-2">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+          >
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Search className="h-4 w-4 text-gray-400 dark:text-gray-500" />
@@ -185,16 +214,17 @@ export default function ProductsList() {
                 placeholder="Rechercher par nom, SKU ou catégorie..."
               />
             </div>
-          </div>
+          </motion.div>
         </div>
-        
-      
-        
-      
       </div>
 
       {/* Products Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.4 }}
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+      >
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
@@ -226,6 +256,46 @@ export default function ProductsList() {
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Actions
+                  <div className="relative inline-block ml-2">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      onClick={() => setShowActionsHelp(!showActionsHelp)}
+                      className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
+                      title="Aide sur les actions"
+                    >
+                      <HelpCircle className="w-3 h-3 text-gray-400" />
+                    </motion.button>
+                    <AnimatePresence>
+                      {showActionsHelp && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                          className="absolute top-8 right-0 z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 w-80"
+                        >
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">Guide des Actions</h4>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center space-x-2">
+                              <History className="w-4 h-4 text-purple-600" />
+                              <span className="text-gray-700 dark:text-gray-300">Aperçu Stock : Voir l'historique complet</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RotateCcw className="w-4 h-4 text-blue-600" />
+                              <span className="text-gray-700 dark:text-gray-300">Rectifier : Ajuster le stock manuellement</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Edit className="w-4 h-4 text-amber-600" />
+                              <span className="text-gray-700 dark:text-gray-300">Modifier : Éditer les informations produit</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <span className="text-gray-700 dark:text-gray-300">Supprimer : Retirer définitivement</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </th>
               </tr>
             </thead>
@@ -235,7 +305,13 @@ export default function ProductsList() {
                 const lastAdjustment = getLastStockAdjustment(product.id);
                 
                 return (
-                <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <motion.tr 
+                  key={product.id} 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200"
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900 dark:text-white">{product.name}</div>
                     <div className="text-xs text-gray-500 dark:text-gray-400">{product.category}</div>
@@ -297,37 +373,56 @@ export default function ProductsList() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     <div className="flex items-center space-x-3">
-                      <button 
+                      <ActionTooltip content="Voir l'historique complet du stock">
+                        <motion.button 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         onClick={() => setViewingHistory(product.id)}
                         className="text-purple-600 hover:text-purple-700 transition-colors"
                         title="Aperçu Stock"
                       >
                         <History className="w-4 h-4" />
-                      </button>
-                      <button 
+                        </motion.button>
+                      </ActionTooltip>
+                      
+                      <ActionTooltip content="Rectifier le stock (entrée/sortie)">
+                        <motion.button 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         onClick={() => setAdjustingStock(product.id)}
                         className="text-blue-600 hover:text-blue-700 transition-colors"
                         title="Rectifier Stock"
                       >
                         <RotateCcw className="w-4 h-4" />
-                      </button>
-                      <button 
+                        </motion.button>
+                      </ActionTooltip>
+                      
+                      <ActionTooltip content="Modifier les informations du produit">
+                        <motion.button 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         onClick={() => handleEditProduct(product.id)}
                         className="text-amber-600 hover:text-amber-700 transition-colors"
                         title="Modifier"
                       >
                         <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
+                        </motion.button>
+                      </ActionTooltip>
+                      
+                      <ActionTooltip content="Supprimer définitivement ce produit">
+                        <motion.button 
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
                         onClick={() => handleDeleteProduct(product.id)}
                         className="text-red-600 hover:text-red-700 transition-colors"
                         title="Supprimer"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                        </motion.button>
+                      </ActionTooltip>
                     </div>
                   </td>
-                </tr>
+                </motion.tr>
                 );
               })}
             </tbody>
@@ -339,9 +434,52 @@ export default function ProductsList() {
             <p className="text-gray-500 dark:text-gray-400">Aucun produit trouvé</p>
           </div>
         )}
-      </div>
+      </motion.div>
 
-      <AddProductModal 
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <AddProductModal 
+            isOpen={isAddModalOpen} 
+            onClose={() => setIsAddModalOpen(false)} 
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingProduct && (
+          <EditProductModal
+            isOpen={!!editingProduct}
+            onClose={() => setEditingProduct(null)}
+            product={products.find(p => p.id === editingProduct)!}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {adjustingStock && (
+          <StockAdjustmentModal
+            isOpen={!!adjustingStock}
+            onClose={() => setAdjustingStock(null)}
+            product={products.find(p => p.id === adjustingStock)!}
+            currentStock={calculateCurrentStock(adjustingStock)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {viewingHistory && (
+          <StockHistoryModal
+            isOpen={!!viewingHistory}
+            onClose={() => setViewingHistory(null)}
+            product={products.find(p => p.id === viewingHistory)!}
+          />
+        )}
+      </AnimatePresence>
+    </motion.div>
+    </>
+  );
+}
+
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)} 
       />
