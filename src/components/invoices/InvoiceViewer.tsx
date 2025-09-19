@@ -45,13 +45,25 @@ export default function InvoiceViewer({ invoice, onClose, onEdit, onDownload, on
     return templates.find(t => t.id === templateId)?.isPro || false;
   };
 
-  const handlePrint = () => {
+ const handlePrint = async () => {
     if (isTemplateProOnly(selectedTemplate) && licenseType !== 'pro') {
       setShowProModal(true);
       return;
     }
-    generatePDFWithTemplate();
+    const invoiceContent = document.getElementById('invoice-content');
+    if (!invoiceContent) {
+      alert('Erreur: Contenu de la facture non trouvé');
+      return;
+    }
+    try {
+      const blob = await createPdfBlob(invoiceContent, `Facture_${invoice.number}.pdf`);
+      openPrintTab(blob, `Facture_${invoice.number}`);
+    } catch (e) {
+      console.error('Erreur impression:', e);
+      alert('Erreur lors de la préparation de l’impression');
+    }
   };
+  
 
   const handleDownloadPDF = () => {
     if (isTemplateProOnly(selectedTemplate) && licenseType !== 'pro') {
