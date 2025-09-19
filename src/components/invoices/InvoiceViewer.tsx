@@ -45,6 +45,19 @@ export default function InvoiceViewer({ invoice, onClose, onEdit, onDownload, on
     return templates.find(t => t.id === templateId)?.isPro || false;
   };
 
+  const createPdfBlob = async (rootEl: HTMLElement, filename: string) => {
+    // why: réduire les paddings réservés header/footer pendant l’export
+    rootEl.classList.add('exporting');
+    try {
+      const worker = html2pdf().set(buildPdfOptions(filename)).from(rootEl).toPdf();
+      const pdf: any = await worker.get('pdf');
+      const blob: Blob = pdf.output('blob');
+      return blob;
+    } finally {
+      rootEl.classList.remove('exporting');
+    }
+  };
+
   const openPrintTab = (blob: Blob, title: string) => {
     const url = URL.createObjectURL(blob);
     const win = window.open('', '_blank');
