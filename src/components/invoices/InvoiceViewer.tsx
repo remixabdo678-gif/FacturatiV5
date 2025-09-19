@@ -73,6 +73,7 @@ export default function InvoiceViewer({ invoice, onClose, onEdit }: InvoiceViewe
   const renderPdfWithHF = async (action: 'download' | 'print') => {
     const { root, header, footer } = findHeaderFooter();
 
+    
     // capture header/footer pour les repeindre
     const [hImg, fImg] = await Promise.all([captureHF(header), captureHF(footer)]);
     const PAGE_W_MM = 210;
