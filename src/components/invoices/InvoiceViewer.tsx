@@ -45,6 +45,24 @@ export default function InvoiceViewer({ invoice, onClose, onEdit, onDownload, on
     return templates.find(t => t.id === templateId)?.isPro || false;
   };
 
+  const openPrintTab = (blob: Blob, title: string) => {
+    const url = URL.createObjectURL(blob);
+    const win = window.open('', '_blank');
+    if (!win) {
+      alert("Veuillez autoriser les fenêtres pop-up pour l'impression.");
+      return;
+    }
+    win.document.write(`
+      <html>
+        <head><title>${title}</title><meta charset="utf-8" /></head>
+        <body style="margin:0">
+          <iframe src="${url}" style="border:0;width:100%;height:100vh" onload="this.contentWindow && this.contentWindow.focus && this.contentWindow.print && this.contentWindow.print()"></iframe>
+        </body>
+      </html>
+    `);
+    win.document.close();
+  };
+
  const handlePrint = async () => {
     if (isTemplateProOnly(selectedTemplate) && licenseType !== 'pro') {
       setShowProModal(true);
