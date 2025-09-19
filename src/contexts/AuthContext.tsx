@@ -48,6 +48,7 @@ interface User {
     quotes: boolean;
     clients: boolean;
     products: boolean;
+    orders: boolean;
     suppliers: boolean;
     stockManagement: boolean;
     supplierManagement: boolean;
@@ -55,6 +56,7 @@ interface User {
     reports: boolean;
     settings: boolean;
     projectManagement: boolean;
+    orders: boolean;
   };
   company: Company;
 }

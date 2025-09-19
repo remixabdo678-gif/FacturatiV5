@@ -24,6 +24,7 @@ export interface UserPermissions {
   quotes: boolean;
   clients: boolean;
   products: boolean;
+  orders: boolean;
   suppliers: boolean;
   stockManagement: boolean;
   supplierManagement: boolean;
@@ -31,6 +32,7 @@ export interface UserPermissions {
   reports: boolean;
   settings: boolean;
   projectManagement: boolean;
+  orders: boolean;
 }
 
 export interface ManagedUser {
@@ -66,6 +68,7 @@ const DEFAULT_PERMISSIONS: UserPermissions = {
   quotes: false,
   clients: false,
   products: false,
+  orders: false,
   suppliers: false,
   stockManagement: false,
   supplierManagement: false,

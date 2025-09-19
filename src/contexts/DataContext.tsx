@@ -13,13 +13,14 @@ import {
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
+import { useOrder } from './OrderContext';
 import { convertNumberToWords } from '../utils/numberToWords';
 
 export interface StockMovement {
   id: string;
   productId: string;
   productName: string;
-  type: 'initial' | 'sale' | 'adjustment' | 'return';
+  type: 'initial' | 'sale' | 'adjustment' | 'return' | 'order_out' | 'order_cancel_return' | 'invoice_sale';
   quantity: number; // Positif pour entrée, négatif pour sortie
   previousStock: number;
   newStock: number;
@@ -679,27 +680,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       for (const item of invoiceData.items) {
         const product = products.find(p => p.name === item.description);
         if (product) {
-          // Calculer le stock actuel avant cette vente
-          const initialStock = product.initialStock || 0;
-          const adjustments = stockMovements
-            .filter(m => m.productId === product.id && m.type === 'adjustment')
-            .reduce((sum, m) => sum + m.quantity, 0);
-          const previousSales = invoices.reduce((sum, invoice) => {
-            return sum + invoice.items
-              .filter(invItem => invItem.description === product.name)
-              .reduce((itemSum, invItem) => itemSum + invItem.quantity, 0);
-          }, 0);
-          
-          const currentStock = initialStock + adjustments - previousSales;
-          
           await addStockMovement({
             productId: product.id,
             productName: product.name,
-            type: 'sale',
+            type: 'invoice_sale',
             quantity: -item.quantity, // Négatif pour une sortie
-            previousStock: currentStock,
-            newStock: currentStock - item.quantity,
-            reason: 'Vente',
+            previousStock: 0, // Sera calculé par le système
+            newStock: 0, // Sera calculé par le système
+            reason: 'Vente (Facture)',
             reference: invoiceNumber,
             userId: user.id,
             userName: user.name,

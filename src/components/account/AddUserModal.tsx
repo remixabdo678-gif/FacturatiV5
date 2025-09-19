@@ -41,6 +41,7 @@ export default function AddUserModal({ isOpen, onClose }: AddUserModalProps) {
     quotes: { label: 'Devis', description: 'Créer, modifier et gérer les devis' },
     clients: { label: 'Clients', description: 'Gérer la base de données clients' },
     products: { label: 'Produits', description: 'Gérer le catalogue produits' },
+    orders: { label: 'Commandes', description: 'Gérer les commandes et bons de livraison' },
     suppliers: { label: 'Fournisseurs', description: 'Gérer les fournisseurs (basique)' },
     stockManagement: { label: 'Gestion Stock', description: 'Gestion avancée du stock (PRO)' },
     supplierManagement: { label: 'Gestion Fournisseurs', description: 'Gestion avancée fournisseurs (PRO)' },

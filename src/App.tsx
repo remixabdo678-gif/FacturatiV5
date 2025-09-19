@@ -7,6 +7,7 @@ import { LicenseProvider } from './contexts/LicenseContext';
 import { UserManagementProvider } from './contexts/UserManagementContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { StockProvider } from './contexts/StockContext';
+import { OrderProvider } from './contexts/OrderContext';
 import ExpirationNotification from './components/auth/ExpirationNotification';
 import ExpiredAccountModal from './components/auth/ExpiredAccountModal';
 import EmailVerificationBanner from './components/auth/EmailVerificationBanner';
@@ -37,6 +38,10 @@ import SupplierManagement from './components/suppliers/SupplierManagement';
 import SuppliersSection from './components/suppliers/SuppliersSection';
 import AccountManagement from './components/account/AccountManagement';
 import ProjectManagement from './components/projects/ProjectManagement';
+import OrdersList from './components/orders/OrdersList';
+import CreateOrder from './components/orders/CreateOrder';
+import OrderDetail from './components/orders/OrderDetail';
+import EditOrder from './components/orders/EditOrder';
 import { SupplierProvider } from './contexts/SupplierContext';
 
 function AppContent() {
@@ -172,6 +177,10 @@ function AppContent() {
             <Route path="/hr-management" element={<HRManagement />} />
             <Route path="/project-management" element={<ProjectManagement />} />
             <Route path="/account-management" element={<AccountManagement />} />
+            <Route path="/commandes" element={<OrdersList />} />
+            <Route path="/commandes/nouveau" element={<CreateOrder />} />
+            <Route path="/commandes/:id" element={<OrderDetail />} />
+            <Route path="/commandes/:id/modifier" element={<EditOrder />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -262,15 +271,17 @@ function App() {
       <LanguageProvider>
         <AuthProvider>
           <UserManagementProvider>
-            <StockProvider>
-              <SupplierProvider>
-                <DataProvider>
-                  <LicenseProvider>
-                    <AppContent />
-                  </LicenseProvider>
-                </DataProvider>
-              </SupplierProvider>
-            </StockProvider>
+            <OrderProvider>
+              <StockProvider>
+                <SupplierProvider>
+                  <DataProvider>
+                    <LicenseProvider>
+                      <AppContent />
+                    </LicenseProvider>
+                  </DataProvider>
+                </SupplierProvider>
+              </StockProvider>
+            </OrderProvider>
           </UserManagementProvider>
         </AuthProvider>
       </LanguageProvider>

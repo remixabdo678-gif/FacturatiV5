@@ -8,6 +8,7 @@ import {
   Users, 
   Package, 
   FileCheck,
+  ShoppingBag,
   Zap,
   ArrowRight
 } from 'lucide-react';
@@ -57,6 +58,15 @@ export default function QuickActions() {
       color: 'from-orange-500 to-red-600',
       hoverColor: 'hover:from-orange-600 hover:to-red-700',
       permission: 'products'
+    }
+    {
+      title: 'Nouvelle Commande',
+      description: 'Créer un bon de livraison',
+      icon: ShoppingBag,
+      path: '/commandes/nouveau',
+      color: 'from-indigo-500 to-purple-600',
+      hoverColor: 'hover:from-indigo-600 hover:to-purple-700',
+      permission: 'orders'
     }
   ];
 

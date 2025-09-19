@@ -16,6 +16,7 @@ import {
   ChevronRight,
   ChevronDown,
   FileCheck,
+  ShoppingBag,
   TrendingUp,
   UserCheck,
   Truck,
@@ -75,6 +76,7 @@ export default function Sidebar({ open, setOpen, onUpgrade }: SidebarProps) {
     { icon: FileCheck, label: 'Devis', path: '/quotes', permission: 'quotes' },
     { icon: Users, label: t('clients'), path: '/clients', permission: 'clients' },
     { icon: Package, label: t('products'), path: '/products', permission: 'products' },
+    { icon: ShoppingBag, label: 'Commandes', path: '/commandes', permission: 'orders' },
     { icon: Truck, label: 'Fournisseurs', path: '/suppliers', permission: 'suppliers' }
   ];
 

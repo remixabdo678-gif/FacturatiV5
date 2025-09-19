@@ -12,6 +12,7 @@ interface LicenseLimits {
   clients: number;
   products: number;
   quotes: number;
+  orders: number;
   suppliers: number;
 }
 
@@ -22,11 +23,13 @@ interface LicenseContextType {
   canAddClient: boolean;
   canAddProduct: boolean;
   canAddQuote: boolean;
+  canAddOrder: boolean;
   canAddSupplier: boolean;
   isLimitReached: boolean;
   limitMessage: string;
   upgradeToPro: () => Promise<void>;
   checkLimit: (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'suppliers') => boolean;
+  checkLimit: (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'orders' | 'suppliers') => boolean;
   getRemainingCount: (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'suppliers') => number;
   showSuccessModal: boolean;
   setShowSuccessModal: (show: boolean) => void;
@@ -38,6 +41,7 @@ const FREE_LIMITS: LicenseLimits = {
   clients: 10,
   products: 20,
   quotes: 10,
+  orders: 15,
   suppliers: 10
 };
 
@@ -46,6 +50,7 @@ const PRO_LIMITS: LicenseLimits = {
   clients: Infinity,
   products: Infinity,
   quotes: Infinity,
+  orders: Infinity,
   suppliers: Infinity
 };
 
@@ -54,6 +59,7 @@ const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 export function LicenseProvider({ children }: { children: ReactNode }) {
   const { user, upgradeSubscription } = useAuth();
   const { invoices, clients, products, quotes } = useData();
+  const { orders } = useOrder();
   const { suppliers } = useSupplier();
   const [licenseType, setLicenseType] = useState<LicenseType>('free');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -72,9 +78,11 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
   const canAddClient = clients.length < limits.clients;
   const canAddProduct = products.length < limits.products;
   const canAddQuote = quotes.length < limits.quotes;
+  const canAddOrder = orders.length < limits.orders;
   const canAddSupplier = suppliers.length < limits.suppliers;
 
   const isLimitReached = !canAddInvoice || !canAddClient || !canAddProduct || !canAddQuote || !canAddSupplier;
+  const isLimitReached = !canAddInvoice || !canAddClient || !canAddProduct || !canAddQuote || !canAddOrder || !canAddSupplier;
 
   const getLimitMessage = () => {
     const exceeded = [];
@@ -82,6 +90,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     if (!canAddClient) exceeded.push(`clients (${clients.length}/${limits.clients})`);
     if (!canAddProduct) exceeded.push(`produits (${products.length}/${limits.products})`);
     if (!canAddQuote) exceeded.push(`devis (${quotes.length}/${limits.quotes})`);
+    if (!canAddOrder) exceeded.push(`commandes (${orders.length}/${limits.orders})`);
     if (!canAddSupplier) exceeded.push(`fournisseurs (${suppliers.length}/${limits.suppliers})`);
     
     if (exceeded.length === 0) return '';
@@ -89,24 +98,26 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     return `🚨 Limite atteinte pour: ${exceeded.join(', ')}. Passez à la version Pro pour continuer.`;
   };
 
-  const checkLimit = (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'suppliers'): boolean => {
+  const checkLimit = (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'orders' | 'suppliers'): boolean => {
     const currentCounts = {
       invoices: invoices.length,
       clients: clients.length,
       products: products.length,
       quotes: quotes.length,
+      orders: orders.length,
       suppliers: suppliers.length
     };
     
     return currentCounts[type] < limits[type];
   };
 
-  const getRemainingCount = (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'suppliers'): number => {
+  const getRemainingCount = (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'orders' | 'suppliers'): number => {
     const currentCounts = {
       invoices: invoices.length,
       clients: clients.length,
       products: products.length,
       quotes: quotes.length,
+      orders: orders.length,
       suppliers: suppliers.length
     };
     
@@ -139,6 +150,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     canAddClient,
     canAddProduct,
     canAddQuote,
+    canAddOrder,
     canAddSupplier,
     isLimitReached,
     limitMessage: getLimitMessage(),

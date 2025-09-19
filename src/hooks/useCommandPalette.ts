@@ -22,12 +22,14 @@ export function useCommandPalette() {
     { id: 'nav-quotes', title: 'Devis', action: () => navigate('/quotes'), category: 'Navigation', icon: '📋' },
     { id: 'nav-clients', title: 'Clients', action: () => navigate('/clients'), category: 'Navigation', icon: '👥' },
     { id: 'nav-products', title: 'Produits', action: () => navigate('/products'), category: 'Navigation', icon: '📦' },
+    { id: 'nav-orders', title: 'Commandes', action: () => navigate('/commandes'), category: 'Navigation', icon: '🛍️' },
     { id: 'nav-suppliers', title: 'Fournisseurs', action: () => navigate('/suppliers'), category: 'Navigation', icon: '🚚' },
     { id: 'nav-settings', title: 'Paramètres', action: () => navigate('/settings'), category: 'Navigation', icon: '⚙️' },
     
     // Actions rapides
     { id: 'create-invoice', title: 'Nouvelle facture', action: () => navigate('/invoices/create'), category: 'Actions', icon: '➕' },
     { id: 'create-quote', title: 'Nouveau devis', action: () => navigate('/quotes/create'), category: 'Actions', icon: '➕' },
+    { id: 'create-order', title: 'Nouvelle commande', action: () => navigate('/commandes/nouveau'), category: 'Actions', icon: '➕' },
     
     // Gestion PRO
     { id: 'nav-stock', title: 'Gestion de Stock', action: () => navigate('/stock-management'), category: 'Gestion PRO', icon: '📈' },
