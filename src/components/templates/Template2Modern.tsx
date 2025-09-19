@@ -12,7 +12,7 @@ export default function Template2Modern({ data, type, includeSignature = false }
   const { user } = useAuth();
   const title = type === 'invoice' ? 'FACTURE' : 'DEVIS';
   const HEADER_H = 130;
-  const FOOTER_H = 110;
+  const FOOTER_H = 100;
 
   // --- format helpers ---
   const normUnit = (u?: string) => (u || 'unité').toLowerCase().trim();
