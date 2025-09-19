@@ -1,9 +1,9 @@
+// src/contexts/LicenseContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
 import { useSupplier } from './SupplierContext';
+import { useOrder } from './OrderContext'; // IMPORTANT: hook manquant
 
 export type LicenseType = 'free' | 'pro';
 
@@ -28,9 +28,8 @@ interface LicenseContextType {
   isLimitReached: boolean;
   limitMessage: string;
   upgradeToPro: () => Promise<void>;
-  checkLimit: (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'suppliers') => boolean;
   checkLimit: (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'orders' | 'suppliers') => boolean;
-  getRemainingCount: (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'suppliers') => number;
+  getRemainingCount: (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'orders' | 'suppliers') => number;
   showSuccessModal: boolean;
   setShowSuccessModal: (show: boolean) => void;
   upgradeExpiryDate: string | null;
@@ -42,7 +41,7 @@ const FREE_LIMITS: LicenseLimits = {
   products: 20,
   quotes: 10,
   orders: 15,
-  suppliers: 10
+  suppliers: 10,
 };
 
 const PRO_LIMITS: LicenseLimits = {
@@ -51,25 +50,25 @@ const PRO_LIMITS: LicenseLimits = {
   products: Infinity,
   quotes: Infinity,
   orders: Infinity,
-  suppliers: Infinity
+  suppliers: Infinity,
 };
 
 const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
-export function LicenseProvider({ children }: { children: ReactNode }) {
+export function LicenseProvider({ children }: { children: ReactNode }): JSX.Element {
   const { user, upgradeSubscription } = useAuth();
   const { invoices, clients, products, quotes } = useData();
   const { orders } = useOrder();
   const { suppliers } = useSupplier();
+
   const [licenseType, setLicenseType] = useState<LicenseType>('free');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [upgradeExpiryDate, setUpgradeExpiryDate] = useState<string | null>(null);
 
-  // Initialiser le type de licence depuis les données utilisateur
+  // Pourquoi: normaliser la valeur issue du backend
   useEffect(() => {
-    if (user?.company) {
-      setLicenseType(user.company.subscription || 'free');
-    }
+    const sub = user?.company?.subscription;
+    setLicenseType(sub === 'pro' ? 'pro' : 'free');
   }, [user]);
 
   const limits = licenseType === 'free' ? FREE_LIMITS : PRO_LIMITS;
@@ -81,69 +80,57 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
   const canAddOrder = orders.length < limits.orders;
   const canAddSupplier = suppliers.length < limits.suppliers;
 
-  const isLimitReached = !canAddInvoice || !canAddClient || !canAddProduct || !canAddQuote || !canAddSupplier;
-  const isLimitReached = !canAddInvoice || !canAddClient || !canAddProduct || !canAddQuote || !canAddOrder || !canAddSupplier;
+  const isLimitReached =
+    !canAddInvoice || !canAddClient || !canAddProduct || !canAddQuote || !canAddOrder || !canAddSupplier;
 
   const getLimitMessage = () => {
-    const exceeded = [];
+    const exceeded: string[] = [];
     if (!canAddInvoice) exceeded.push(`factures (${invoices.length}/${limits.invoices})`);
     if (!canAddClient) exceeded.push(`clients (${clients.length}/${limits.clients})`);
     if (!canAddProduct) exceeded.push(`produits (${products.length}/${limits.products})`);
     if (!canAddQuote) exceeded.push(`devis (${quotes.length}/${limits.quotes})`);
     if (!canAddOrder) exceeded.push(`commandes (${orders.length}/${limits.orders})`);
     if (!canAddSupplier) exceeded.push(`fournisseurs (${suppliers.length}/${limits.suppliers})`);
-    
     if (exceeded.length === 0) return '';
-    
     return `🚨 Limite atteinte pour: ${exceeded.join(', ')}. Passez à la version Pro pour continuer.`;
   };
 
-  const checkLimit = (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'orders' | 'suppliers'): boolean => {
+  const checkLimit: LicenseContextType['checkLimit'] = (type) => {
     const currentCounts = {
       invoices: invoices.length,
       clients: clients.length,
       products: products.length,
       quotes: quotes.length,
       orders: orders.length,
-      suppliers: suppliers.length
+      suppliers: suppliers.length,
     };
-    
     return currentCounts[type] < limits[type];
   };
 
-  const getRemainingCount = (type: 'invoices' | 'clients' | 'products' | 'quotes' | 'orders' | 'suppliers'): number => {
+  const getRemainingCount: LicenseContextType['getRemainingCount'] = (type) => {
     const currentCounts = {
       invoices: invoices.length,
       clients: clients.length,
       products: products.length,
       quotes: quotes.length,
       orders: orders.length,
-      suppliers: suppliers.length
+      suppliers: suppliers.length,
     };
-    
-    return Math.max(0, limits[type] - currentCounts[type]);
+    const remaining = limits[type] - currentCounts[type];
+    return remaining === Infinity ? Infinity : Math.max(0, remaining);
   };
 
   const upgradeToPro = async (): Promise<void> => {
-    if (!user || !upgradeSubscription) return;
-    
-    try {
-      await upgradeSubscription();
-      
-      // Calculer la date d'expiration pour l'affichage
-      const expiryDate = new Date();
-      expiryDate.setDate(expiryDate.getDate() + 30);
-      setUpgradeExpiryDate(expiryDate.toISOString());
-      
-      setLicenseType('pro');
-      setShowSuccessModal(true);
-    } catch (error) {
-      console.error('Erreur lors de la mise à niveau:', error);
-      throw error;
-    }
+    if (!user || !upgradeSubscription) return; // Pourquoi: éviter crash si hook pas prêt
+    await upgradeSubscription();
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    setUpgradeExpiryDate(expiryDate.toISOString());
+    setLicenseType('pro');
+    setShowSuccessModal(true);
   };
 
-  const value = {
+  const value: LicenseContextType = {
     licenseType,
     limits,
     canAddInvoice,
@@ -159,17 +146,13 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     getRemainingCount,
     showSuccessModal,
     setShowSuccessModal,
-    upgradeExpiryDate
+    upgradeExpiryDate,
   };
 
-  return (
-    <LicenseContext.Provider value={value}>
-      {children}
-    </LicenseContext.Provider>
-  );
+  return <LicenseContext.Provider value={value}>{children}</LicenseContext.Provider>;
 }
 
-export function useLicense() {
+export function useLicense(): LicenseContextType {
   const context = useContext(LicenseContext);
   if (context === undefined) {
     throw new Error('useLicense must be used within a LicenseProvider');
