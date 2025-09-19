@@ -11,7 +11,7 @@ interface TemplateProps {
 export default function Template2Modern({ data, type, includeSignature = false }: TemplateProps) {
   const { user } = useAuth();
   const title = type === 'invoice' ? 'FACTURE' : 'DEVIS';
-  const HEADER_H = 150;
+  const HEADER_H = 130;
   const FOOTER_H = 110;
 
   // --- format helpers ---
